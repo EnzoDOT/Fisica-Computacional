@@ -3,7 +3,7 @@
 #include <math.h>
 #include <time.h>
 /*Percolar por Pedro y Enzo. Marzo 2019*/
-
+/*sos un gil enzo*/
 #define M 2147483647
 #define A 16807
 #define Q 127773
