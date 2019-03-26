@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 /*Percolar por Pedro y Enzo. Marzo 2019*/
+/* A Pedro le gusta per cola*/
 
 #define M 2147483647
 #define A 16807
