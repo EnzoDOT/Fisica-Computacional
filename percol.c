@@ -17,6 +17,7 @@ void imprimir (int *red, int dim);
 void clasificar(int *red,int i);
 void etiqueta_falsa(int *red,int *historial,int s1, int s2, int i);
 
+//int main (int argc[],char *argv[])
 int main ()
 { int *red;
   int dim;
