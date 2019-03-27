@@ -3,7 +3,7 @@
 #include <math.h>
 #include <time.h>
 /*Percolar por Pedro y Enzo. Marzo 2019*/
-/*sos un gil enzo*/
+
 #define M 2147483647
 #define A 16807
 #define Q 127773
@@ -12,12 +12,12 @@
 
 
 float irandom(int *semilla);
-int poblar (int *red,float p, int dim, float *x);
-int imprimir (int *red,float p, int dim);
-int clasificar(int *red,int i);
-int etiqueta_falsa(int *red,int *historial,int s1, int s2, int i);
+void poblar (int *red,float p, int dim, int *semilla);
+void imprimir (int *red, int dim);
+void clasificar(int *red,int i);
+void etiqueta_falsa(int *red,int *historial,int s1, int s2, int i);
 
-int main (int argc[],char *argv[])
+int main ()
 { int *red;
   int dim;
   float p;
@@ -26,16 +26,16 @@ int main (int argc[],char *argv[])
   int i;
   semilla=(int*) malloc(sizeof(int));
   *semilla=S;
-  *x=irandom(semilla);
-  sscanf(argv[1],"%d",&dim);
+  dim=8;
+//  *x=irandom(semilla);
+//  sscanf(argv[1],"%d",&dim);
   *semilla=S;
   red=(int*) malloc(dim*dim*sizeof(int));
   p=0.5;
-  dim=8;
-  poblar(red,p,dim,x);
-  clasificar(red,i);
+  poblar(red,p,dim,semilla);
+//  clasificar(red,i);
   //percola();
-  imprimir(red,p,dim);
+  imprimir(red,dim);
   free(red);
   free(semilla);
 return 0;
@@ -43,37 +43,40 @@ return 0;
 
 float irandom(int *semilla)
 { 
-  int k ;
+  int k;
   float x;
   k=(*semilla)/Q;       
   *semilla=A*(*semilla-k*Q)-k*R;
   if(*semilla<0) *semilla=(*semilla)+M;
   x=(*semilla)*(1.0/M);
-  printf("%f",x);
+//  printf("%f",x);
   return (float)x;
 }
 
-int poblar (int *red,float p, int dim, float *x)
+void poblar (int *red,float p, int dim, int *semilla)
 { int i;
-  for(i=0;i<dim*dim;i=i+1)
+  float *x;
+  for(i=0;i<dim*dim;i++)
       {*(red+i)=0;
+        *x=irandom((int*) semilla);
         {if(*x<p)
          *(red+i)=1;
         }
        }
 }
 
-int imprimir (int *red,float p, int dim)
+void imprimir (int *red, int dim)
 { int i,j;
   for(i=0;i<dim;i=i+1)
         {for(j=0;j<dim;j=j+1)
          {printf("%d",*(red+dim*i+j));
          }
+         printf("\n");
         }
  printf("\n");
 }
 
-int clasificar(int *red,int i)
+void clasificar(int *red,int i)
 { int frag;
   int s1;
   int dim;
@@ -95,7 +98,7 @@ int clasificar(int *red,int i)
    }
 }
 
-int etiqueta_falsa(int *red,int *historial,int s1, int s2, int i)
+void etiqueta_falsa(int *red,int *historial,int s1, int s2, int i)
 {int minimo, maximo;
  while(*(historial+s1)<0)
   {s1=-(*historial+s1);
@@ -115,4 +118,5 @@ int etiqueta_falsa(int *red,int *historial,int s1, int s2, int i)
   if(minimo==maximo){*(historial+maximo)=minimo;
                      }                
 }
+
 
