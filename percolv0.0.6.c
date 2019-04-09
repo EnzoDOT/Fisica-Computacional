@@ -19,6 +19,7 @@ void etiqueta_falsa(int *red,int *historial,int s1, int s2, int i);
 void actualizar(int *red, int *historial,int s,int frag);
 void corregir_etiqueta(int *red,int *historial,int dim);
 void percola(int *red,int dim,int *per);
+void distfrag (int *red, int dim);
 
 int main (int argc, char *argv[])
 { int *red;
@@ -257,21 +258,31 @@ void percola (int *red, int dim, int *per)
 void distfrag (int *red, int dim)
 { int i,j;    
   int *ns;
+  int *ns2;
   ns=(int*) malloc(dim*dim*sizeof(int));         
-
+  ns2=(int*) malloc(dim*dim*sizeof(int));         
   for(j=0;j<dim*dim;j++)
     {  
      *(ns+j)=0;
+     *(ns2+j)=0;
     }
 
   for(i=0;i<dim*dim;i++)
-       {
-       for(j=0;j<dim*dim;j++)
-        {  
-         if(*(red+i)==j)
+       {       
+       if(*(red+i)!=0)
          {
-          *(ns+j)=*(ns+j)+1;
-         }
-        }
-      }             
+          j=*(red+i);          
+          *(ns+j)=*(ns+j)+1;        
+         }        
+        }     
+
+  for(i=0;i<dim*dim;i++)
+       {       
+       if(*(ns+i)!=0)
+         {
+          j=*(ns+i);          
+          *(ns2+j)=*(ns2+j)+1;
+         }        
+        }  
+
 }

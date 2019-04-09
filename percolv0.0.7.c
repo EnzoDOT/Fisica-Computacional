@@ -18,34 +18,50 @@ void clasificar(int *red,int dim);
 void etiqueta_falsa(int *red,int *historial,int s1, int s2, int i);
 void actualizar(int *red, int *historial,int s,int frag);
 void corregir_etiqueta(int *red,int *historial,int dim);
-void percola(int *red,int dim);
+void percola(int *red,int dim,int *per);
 void distfrag (int *red, int dim);
 
-int main (int argc,char *argv[])
-//int main ()
+int main (int argc, char *argv[])
 { int *red;
+  FILE *fp;
   int dim;
+  int per,perc;
+  int i,j,N;
   float p;
+  float tp;
   int *semilla;
   semilla=(int*) malloc(sizeof(int));
-  *semilla=S;
-  p=0.5;
-  dim=8;
-// *x=irandom(semilla);
-  if(argc==3)
-   {sscanf(argv[1],"%d",&dim);
-    sscanf(argv[2],"%f",&p);
+  fp=fopen("miarchivo.dat","w");
+   p=0.5;
+   dim=8;
+   N=100;
+   if(argc==4)
+    {sscanf(argv[1],"%d",&dim);
+     sscanf(argv[2],"%f",&p);
+     sscanf(argv[3],"%d",&N);
+     }
+  red=(int*) malloc(dim*dim*sizeof(int));  
+   for(p=0;p<=1.0;p=p+0.01)
+   {
+    perc=0;
+    for(i=0;i<N;i++)
+    {
+    *semilla=S+i;
+    per=0;      
+    poblar(red,p,dim,semilla);
+    clasificar(red,dim);
+    percola(red,dim,&per);
+    perc=perc+per;
     }
-  *semilla=S;
-  red=(int*) malloc(dim*dim*sizeof(int));
-  poblar(red,p,dim,semilla);
-  imprimir(red,dim);
-  clasificar(red,dim);
-  imprimir(red,dim);
-  percola(red,dim);
-  distfrag(red,dim);
+    fprintf(fp,"%f %f\n", p, (1.0)*perc/N);
+    if(perc>N/2)
+    {
+     printf("%f", p);
+    }
+   }
   free(red);
   free(semilla);
+  fclose(fp);
 return 0;
 }
 
@@ -63,11 +79,11 @@ float irandom(int *semilla)
 
 void poblar (int *red,float p, int dim, int *semilla)
 { int i;
-  float *x;
+//  float x;
   for(i=0;i<dim*dim;i++)
       {*(red+i)=0;
-        *x=irandom((int*) semilla);
-        {if(*x<p)
+//        x=irandom(semilla);
+        {if(irandom(semilla)<p)
          *(red+i)=1;
         }
        }      
@@ -165,7 +181,6 @@ void clasificar(int *red, int dim)
    
    corregir_etiqueta(red,historial,dim);
 
-//   imprimir(historial,dim);
 }
 
 void actualizar(int *local,int *historial,int s,int frag) // modificado por Guillermo Frank
@@ -214,84 +229,19 @@ void corregir_etiqueta(int *red,int *historial,int dim) // Guillermo Frank
 }
 
 
-void percola (int *red, int dim)
+void percola (int *red, int dim, int *per)
 { int i,j;    
-  int *fila1;
-  int *filadim;
-  int width =1;
-  char letterp = 'P';
-  char lettere = 'e';
-  char letterr = 'r';
-  char letterc = 'c';
-  char lettero = 'o';
-  char letterl = 'l';
-  char lettera = 'a';
-  char letterexc2 = '!';
-  char lettern = 'N';
-  char letteresp = ' ';
-
-
-  int per;
-  fila1=(int*) malloc(dim*sizeof(int));
-  filadim=(int*) malloc(dim*sizeof(int));
-         printf("\n");
-  per=0;
-
-  for(i=0;i<dim;i++)
-       {
-       *(fila1+i)=*(red+i);
-       *(filadim+i)=*(red+i+dim*dim-dim);
-         printf("%d",*(fila1+i));
-       }
-         printf("\n");
-
-  for(i=0;i<dim;i++)
-       {
-         printf("%d",*(filadim+i));
-      }
-         printf("\n");
-
   for(i=0;i<dim;i++)
        {
        for(j=0;j<dim;j++)
-         {  
-         if(*(fila1+i)==*(filadim+j) && *(fila1+i)!=0)
+       {  
+         if(*(red+i)==*(red+dim*dim-dim+j) && *(red+i))
          {
-          per=1;
+          *per=1;
          }
        }
-      }
-
-  printf("\n");
-
-  if(per)
-    {        
-     printf( "%*c", width, letterp );     
-     printf( "%*c", width, lettere );   
-     printf( "%*c", width, letterr );   
-     printf( "%*c", width, letterc ); 
-     printf( "%*c", width, lettero );
-     printf( "%*c", width, letterl );
-     printf( "%*c", width, lettera );   
-     printf( "%*c", width, letterexc2);   
-     printf("\n");
-    }
-   else 
-    {
-     printf( "%*c", width, lettern );   
-     printf( "%*c", width, lettero );   
-     printf( "%*c", width, letteresp );   
-     printf( "%*c", width, letterp );     
-     printf( "%*c", width, lettere );   
-     printf( "%*c", width, letterr );   
-     printf( "%*c", width, letterc ); 
-     printf( "%*c", width, lettero );
-     printf( "%*c", width, letterl );
-     printf( "%*c", width, lettera );   
-     printf("\n");
-    }            
+      }             
 }
-
 
 void distfrag (int *red, int dim)
 { int i,j;    
@@ -323,7 +273,4 @@ void distfrag (int *red, int dim)
          }        
         }  
 
-
-  imprimir(ns,dim);  
-  imprimir(ns2,dim); 
 }
