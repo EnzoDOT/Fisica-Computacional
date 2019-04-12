@@ -237,7 +237,7 @@ void corregir_etiqueta(int *red,int *historial,int dim) // Guillermo Frank
 
 
 void percola (int *red, int dim, int *per, int *cper)
-{ int i,j;    
+{ int i,j,k;    
   for(i=0;i<dim;i++)
       {
        *(cper+i)=0;
@@ -246,6 +246,7 @@ void percola (int *red, int dim, int *per, int *cper)
          if(*(red+i)==*(red+dim*dim-dim+j) && *(red+i))
          {
           *per=1;
+//          k=*(red+i)
           *(cper+i)=*(red+i);
          }
        }
@@ -288,3 +289,4 @@ void distfrag (int *red, int dim, int *ns, int *ns2, int *cper)
         }     
 
 }
+
