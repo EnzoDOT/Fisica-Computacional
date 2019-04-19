@@ -23,11 +23,12 @@ void distfrag (int *red, int dim,int *ns, int *ns2, int *cper);
 
 int main (int argc, char *argv[])
 { int *red,*ns,*ns2,*historial;
-  char filename[255];
+  char filename[255]; 
+  FILE *fp2;
   int dim;
   int per,perc;
   int i,j,N,k;
-  float p;
+  float p,pmin,pmax,pc;
   int *semilla,*cper;
   semilla=(int*) malloc(sizeof(int));
   cper=(int*) malloc(sizeof(int));
@@ -41,14 +42,13 @@ int main (int argc, char *argv[])
      }
    sprintf(filename,"AcumulativaB_L=%d.dat",dim);
    FILE *fp=fopen(filename,"w");
- 
-   sprintf(filename,"dispersionB_L=%d.dat",dim);
-   FILE *fp2=fopen(filename,"w"); 
+   fp2=fopen("dispersionB.dat","a"); 
    red=(int*) malloc(dim*dim*sizeof(int));  
    ns=(int*) malloc(dim*dim*sizeof(int));         
    ns2=(int*) malloc(dim*dim*sizeof(int));    
    historial=(int*) malloc(dim*dim*sizeof(int));     
    j=0;
+   k=0;
    for(p=0;p<=1.0;p=p+0.01)
    {
     perc=0;
@@ -65,25 +65,29 @@ int main (int argc, char *argv[])
     if(perc>N/2 && j<1)
     {
      j=j+1;
+     pc=p;
      printf("%f", p);
     }
     if(perc>0.4*N && k<1)
     {
      k=k+1; 
-     printf("%f", p);
+     pmin=p;
      }
-    if(perc>0.6*N && k<1)
+    if(perc>0.6*N && k<2)
     {
      k=k+1; 
-     printf("%f", p);
+     pmax=p;
      }
    }
+  p=pmax-pmin;
+  fprintf(fp2,"%f %f\n", p, pc);
   free(red);
   free(ns);
   free(ns2);
   free(historial);
   free(semilla);
   fclose(fp);
+  fclose(fp2);
 return 0;
 }
 
