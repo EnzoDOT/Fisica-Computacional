@@ -3,10 +3,6 @@
 #include <math.h>
 #include <time.h>
 /*Percolar por Pedro y Enzo. Marzo 2019*/
-/* Hola asasd
-*
-*
-/*
 
 #define M 2147483647
 #define A 16807
@@ -45,8 +41,9 @@ int main (int argc, char *argv[])
      }
    sprintf(filename,"AcumulativaB_L=%d.dat",dim);
    FILE *fp=fopen(filename,"w");
+ 
    sprintf(filename,"dispersionB_L=%d.dat",dim);
-   FILE *fp2=fopen(filename,"w");
+   FILE *fp2=fopen(filename,"w"); 
    red=(int*) malloc(dim*dim*sizeof(int));  
    ns=(int*) malloc(dim*dim*sizeof(int));         
    ns2=(int*) malloc(dim*dim*sizeof(int));    
