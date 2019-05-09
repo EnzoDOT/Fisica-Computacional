@@ -17,41 +17,33 @@ void imprimir (int *red, int dim);
 
 int main (int argc, char *argv[])
 { 
-  FILE *fp, *fp2;
+  FILE *fp;
   int i,N;
-  float p,x,delta,xp,fx,fxp,pa;
+  float p,x,delta,xp,pa;
   int *semilla;
   semilla=(int*) malloc(sizeof(int));
   *semilla=S;
 
    fp=fopen("metropolis1a.dat","w");
-   fp2=fopen("metropolis1amuestra.dat","w");
+
 
    N=100;
    if(argc==2)
     {
      sscanf(argv[1],"%d",&N);
-     }
-    pa=0.0;   
-    x=0.0;
+    }
+
 
    for(delta=0.1;delta<10.0;delta=delta+0.1)
     {
+    pa=0.0;   
+    x=0.0;
     for(i=0;i<N;i++)
     {
      xp=x;    
      x=irandom(semilla);   
      x=xp+(2.0*x-1.0)*delta;
-     fx=exp((-x*x)/2.0);
-     fxp=exp((-xp*xp)/2.0);
-     if(fx<=fxp)
-     {
-      p=exp((xp*xp-x*x)/2.0);
-     } 
-     else
-     {
-      p=1.0;
-     }
+     p=exp((xp*xp-x*x)/2.0);
       if(irandom(semilla)<=p)  
       {     
       pa=pa+1.0;//p;
@@ -62,7 +54,8 @@ int main (int argc, char *argv[])
       x=xp;
      }
     }
-    pa=pa/N;
+    pa=pa/(float)N;
+//    fprintf(fp,"%f %f \n", delta, pa/(2.0*delta));
     fprintf(fp,"%f %f \n", delta, pa);
   }
 
