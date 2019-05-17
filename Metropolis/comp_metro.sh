@@ -1,3 +1,3 @@
 #!/bin/bash
  
-gcc -Wall -O3 -o metro.x metropolisv0.1.3.c -lm
+gcc -Wall -O3 -o metro.x metropolisv2.1.b.c -lm
