@@ -15,19 +15,21 @@ float irandom(int *semilla);
 void poblar (int *red,float p, int dim, int *semilla);
 void imprimir (int *red, int dim);
 void cborde (int *red, int dim);
-void hamiltoniano (int *red, int dim, float Jint, float B);
-void flipeo (int *red, int dim, float *tabla);
-
+float hamiltoniano (int *red, int dim, float Jint, float B);
+void flipeo (int *red, int dim, float Jint, float B,  int *semilla);
+void aceptacion (int *red, int dim, float Delta, int i, int j, int *semilla);
+int magnetizacion (int *red, int dim);
 
 int main (int argc, char *argv[])
 { int *red;
-  FILE *fp;
+  FILE *fp,*fp2;
   int dim;
   int i,N;
-  float p,B,Jint,*tabla;
+  float p,B,Jint;
   int *semilla;
   semilla=(int*) malloc(sizeof(int));
-  fp=fopen("MMC.dat","a");
+  fp=fopen("MMCEn.dat","w");
+  fp2=fopen("MMCMagnetizacion.dat","a");
    *semilla=S;
    p=0.5;
    dim=8;
@@ -41,30 +43,28 @@ int main (int argc, char *argv[])
      sscanf(argv[4],"%f",&Jint);
      sscanf(argv[5],"%f",&B);
      }
-  dim=dim+2;
   red=(int*) malloc(dim*dim*sizeof(int));  
-  tabla=(float*) malloc(5*sizeof(float));
-  *(tabla)= -8*Jint;
-  *(tabla+1)= -4*Jint;
-  *(tabla+2)= 0.0;
-  *(tabla+3)= 4*Jint;
-  *(tabla+4)= 8*Jint;
-    
+  poblar(red,p,dim,semilla);
+  cborde(red,dim);
 //  imprimir(red,dim);
-  
- // for(i=0; i<N;i++)
- //  {
-   *semilla=S;
-   poblar(red,p,dim,semilla);
+  fprintf(fp,"%d %f \n", 0, hamiltoniano(red,dim,Jint,B));  
+//  flipeo (red,dim,Jint,B,semilla);
+//  cborde(red,dim);
+//  imprimir(red,dim);  
+  for(i=0; i<N;i++)
+   {
    cborde(red,dim);
-   imprimir(red,dim);
-   hamiltoniano(red,dim,Jint,B);
-   flipeo(red,dim,tabla);
-//   }
-//  printf("%f",prom);  
+   flipeo (red,dim,Jint,B,semilla);
+   fprintf(fp,"%d %f \n", i+1, hamiltoniano(red,dim,Jint,B));  
+//   *semilla=S+i;
+//   poblar(red,p,dim,semilla);
+   }
+//  imprimir(red,dim);  
+  fprintf(fp2,"%f %d \n", B, (-1)*magnetizacion(red,dim));
   free(red);
   free(semilla);
   fclose(fp);
+  fclose(fp2);
 return 0;
 }
 
@@ -100,7 +100,7 @@ void imprimir (int *red, int dim)
           }
           else 
           {
-           printf("%d ",*(red+dim*i+j));
+           printf("%d ",*(red+dim*i+j));                     
           }
          }
          printf("\n");
@@ -114,41 +114,60 @@ void cborde (int *red, int dim)
     {  
     *(red+i*dim)=*(red+(i+1)*dim-2); //cborde para primer columna
     *(red+(i+1)*dim-1)=*(red+i*dim+1); //cborde para ultima columna
-    
     *(red+i)=*(red+dim*dim-2*dim+i); //cborde para primer fila
     *(red+dim*dim-dim+i)=*(red+dim+i); //cborde para ultima fila
     }
 }
 
-void hamiltoniano (int *red, int dim, float Jint, float B)
+void flipeo (int *red, int dim, float Jint, float B, int *semilla)
+{ int i,j,suma;
+  float Delta;  
+  for(j=1;j<dim-1;j++)
+   {for(i=1;i<dim-1;i++)
+    {      
+     suma=*(red+i-1+j*dim)+*(red+i+1+j*dim)+*(red+i+(j-1)*dim)+*(red+i+(j+1)*dim);
+     Delta=*(red+i+j*dim)*(-1)*2*suma*Jint+*(red+i+j*dim)*2*B;
+     aceptacion(red,dim,Delta,i,j,semilla);
+    }
+   }
+}   
+
+void aceptacion (int *red, int dim, float Delta, int i, int j, int *semilla)
+{     float p;
+      p=exp(Delta);
+      if(irandom(semilla)<=p)  
+      {     
+       *(red+i+j*dim)=*(red+i+j*dim)*(-1);
+      }
+}
+
+float hamiltoniano (int *red, int dim, float Jint, float B)
 { int i,j;          
-  float energiaB;
+  float energiaB,energiaJ;
   energiaB=0.0;
+  energiaJ=0.0;
   for(j=1;j<dim-1;j++)
    {for(i=1;i<dim-1;i++)
     {      
     energiaB=energiaB+*(red+i+j*dim); //cborde para primer fila
+    energiaJ=energiaJ+*(red+i+1+j*dim)+*(red+i+(j+1)*dim);  
     }
    }
-    energiaB=B*energiaB;
-//    printf("%f ",energiaB);
+    energiaB=B*energiaB+Jint*energiaJ;
+    return (float)energiaB;    
 }
 
-void flipeo (int *red, int dim, float *tabla)
-{ int i,j,suma;
-  int Delta;  
-        
+int magnetizacion (int *red, int dim)
+{ int i,j;          
+  int stot;
+  stot=0;
   for(j=1;j<dim-1;j++)
-  {for(i=1;i<dim-1;i++)
-   {      
-    suma=*(red+i-1+j*dim)+*(red+i+1+j*dim)+*(red+i+(j-1)*dim)+*(red+i+(j+1)*dim);
-    Delta=*(red+i+j*dim)*(-1)*2*suma
+   {for(i=1;i<dim-1;i++)
+    {      
+    stot=stot+*(red+i+j*dim); //cborde para primer fila
+    }
    }
-  }
-  
     
-    //printf("%d %d",suma,*(red+i+j*dim));
-
+    return (int)stot;    
 }
-
-
+  
