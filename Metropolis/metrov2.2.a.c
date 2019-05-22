@@ -15,13 +15,15 @@ float irandom(int *semilla);
 void poblar (int *red,float p, int dim, int *semilla);
 void imprimir (int *red, int dim);
 void cborde (int *red, int dim);
+void flipeo (int *red, int dim, float Jint, float B,  int *semilla);
+void aceptacion (int *red, int dim, float Delta, int i, int j, int *semilla);
 
 int main (int argc, char *argv[])
 { int *red;
   FILE *fp;
   int dim;
   int i,N;
-  float p;
+  float p,B,Jint;
   int *semilla;
   semilla=(int*) malloc(sizeof(int));
   fp=fopen("MMC.dat","a");
@@ -29,19 +31,30 @@ int main (int argc, char *argv[])
    p=0.5;
    dim=8;
    N=100;
-   if(argc==4)
+   B=1.0;
+   Jint=0.0;
+   if(argc==6)
     {sscanf(argv[1],"%d",&dim);
      sscanf(argv[2],"%f",&p);
      sscanf(argv[3],"%d",&N);
+     sscanf(argv[4],"%f",&Jint);
+     sscanf(argv[5],"%f",&B);
      }
   red=(int*) malloc(dim*dim*sizeof(int));  
   poblar(red,p,dim,semilla);
-  cborde(red,dim);
-  imprimir(red,dim);
+//  cborde(red,dim);
+//  imprimir(red,dim);
+  hamiltoniano(red,dim,Jint,B);
+//  flipeo (red,dim,Jint,B,semilla);
+//  cborde(red,dim);
+//  imprimir(red,dim);  
   for(i=0; i<N;i++)
    {
-   *semilla=S+i;
-   poblar(red,p,dim,semilla);
+   cborde(red,dim);
+   flipeo (red,dim,Jint,B,semilla);
+   hamiltoniano(red,dim,Jint,B);   
+//   *semilla=S+i;
+//   poblar(red,p,dim,semilla);
    }
 //  printf("%f",prom);  
   free(red);
@@ -96,8 +109,44 @@ void cborde (int *red, int dim)
     {  
     *(red+i*dim)=*(red+(i+1)*dim-2); //cborde para primer columna
     *(red+(i+1)*dim-1)=*(red+i*dim+1); //cborde para ultima columna
-    
     *(red+i)=*(red+dim*dim-2*dim+i); //cborde para primer fila
     *(red+dim*dim-dim+i)=*(red+dim+i); //cborde para ultima fila
     }
 }
+
+void flipeo (int *red, int dim, float Jint, float B, int *semilla)
+{ int i,j,suma;
+  float Delta;  
+  for(j=1;j<dim-1;j++)
+   {for(i=1;i<dim-1;i++)
+    {      
+     suma=*(red+i-1+j*dim)+*(red+i+1+j*dim)+*(red+i+(j-1)*dim)+*(red+i+(j+1)*dim);
+     Delta=*(red+i+j*dim)*(-1)*2*suma*Jint+*(red+i+j*dim)*2*B;
+     aceptacion(red,dim,Delta,i,j,semilla);
+    }
+   }
+}   
+
+void aceptacion (int *red, int dim, float Delta, int i, int j, int *semilla)
+{     float p;
+      p=exp(-Delta);
+      if(irandom(semilla)<=p)  
+      {     
+       *(red+i+j*dim)=*(red+i+j*dim)*(-1);
+      }
+}
+
+void hamiltoniano (int *red, int dim, float Jint, float B)
+{ int i,j;          
+  float energiaB;
+  energiaB=0.0;
+  for(j=1;j<dim-1;j++)
+   {for(i=1;i<dim-1;i++)
+    {      
+    energiaB=energiaB+*(red+i+j*dim); //cborde para primer fila
+    }
+   }
+    energiaB=B*energiaB;
+    return (float)energiaB;    
+}
+  
