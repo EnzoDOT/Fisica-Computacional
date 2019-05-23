@@ -18,7 +18,7 @@ void cborde (int *red, int dim);
 float hamiltoniano (int *red, int dim, float Jint, float B);
 void flipeo (int *red, int dim, float Jint, float B,  int *semilla);
 void aceptacion (int *red, int dim, float Delta, int i, int j, int *semilla);
-int magnetizacion (int *red, int dim);
+float magnetizacion (int *red, int dim);
 
 int main (int argc, char *argv[])
 { int *red;
@@ -29,7 +29,7 @@ int main (int argc, char *argv[])
   int *semilla;
   semilla=(int*) malloc(sizeof(int));
   fp=fopen("MMCEn.dat","w");
-  fp2=fopen("MMCMagnetizacion.dat","a");
+  fp2=fopen("MMCMag.dat","w");
    *semilla=S;
    p=0.5;
    dim=8;
@@ -46,7 +46,7 @@ int main (int argc, char *argv[])
   red=(int*) malloc(dim*dim*sizeof(int));  
   poblar(red,p,dim,semilla);
   cborde(red,dim);
-//  imprimir(red,dim);
+  imprimir(red,dim);
   fprintf(fp,"%d %f \n", 0, hamiltoniano(red,dim,Jint,B));  
 //  flipeo (red,dim,Jint,B,semilla);
 //  cborde(red,dim);
@@ -59,13 +59,14 @@ int main (int argc, char *argv[])
 //   *semilla=S+i;
 //   poblar(red,p,dim,semilla);
    }
-//  imprimir(red,dim);  
-  fprintf(fp2,"%f %d \n", B, (-1)*magnetizacion(red,dim));
+   cborde(red,dim);
+  imprimir(red,dim);  
+  fprintf(fp2,"%f %f \n", B, magnetizacion(red,dim));
   free(red);
   free(semilla);
   fclose(fp);
   fclose(fp2);
-return 0;
+  return 0;
 }
 
 float irandom(int *semilla)
@@ -126,7 +127,7 @@ void flipeo (int *red, int dim, float Jint, float B, int *semilla)
    {for(i=1;i<dim-1;i++)
     {      
      suma=*(red+i-1+j*dim)+*(red+i+1+j*dim)+*(red+i+(j-1)*dim)+*(red+i+(j+1)*dim);
-     Delta=*(red+i+j*dim)*(-1)*2*suma*Jint+*(red+i+j*dim)*2*B;
+     Delta=*(red+i+j*dim)*2*suma*Jint+*(red+i+j*dim)*2*B;
      aceptacion(red,dim,Delta,i,j,semilla);
     }
    }
@@ -134,10 +135,11 @@ void flipeo (int *red, int dim, float Jint, float B, int *semilla)
 
 void aceptacion (int *red, int dim, float Delta, int i, int j, int *semilla)
 {     float p;
-      p=exp(Delta);
+      p=exp(-Delta);
       if(irandom(semilla)<=p)  
-      {     
+      {  
        *(red+i+j*dim)=*(red+i+j*dim)*(-1);
+       denergia=denergia+delta;
       }
 }
 
@@ -149,25 +151,24 @@ float hamiltoniano (int *red, int dim, float Jint, float B)
   for(j=1;j<dim-1;j++)
    {for(i=1;i<dim-1;i++)
     {      
-    energiaB=energiaB+*(red+i+j*dim); //cborde para primer fila
-    energiaJ=energiaJ+*(red+i+1+j*dim)+*(red+i+(j+1)*dim);  
+    energiaB=energiaB+*(red+i+j*dim); 
+    energiaJ=energiaJ+*(red+i+1+j*dim)+*(red+i+(j+1)*dim);
     }
    }
     energiaB=B*energiaB+Jint*energiaJ;
     return (float)energiaB;    
 }
 
-int magnetizacion (int *red, int dim)
+float magnetizacion (int *red, int dim)
 { int i,j;          
-  int stot;
+  float stot;
   stot=0;
   for(j=1;j<dim-1;j++)
    {for(i=1;i<dim-1;i++)
     {      
-    stot=stot+*(red+i+j*dim); //cborde para primer fila
+    stot=stot+*(red+i+j*dim);
     }
    }
-    
-    return (int)stot;    
+  return (float)stot/((float)(dim-2)*(dim-2));
 }
   
