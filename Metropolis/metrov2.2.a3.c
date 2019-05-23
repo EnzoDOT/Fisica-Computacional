@@ -22,7 +22,7 @@ float magnetizacion (int *red, int dim);
 
 int main (int argc, char *argv[])
 { int *red;
-  FILE *fp,*fp2;
+  FILE *fp,*fp2,*fp3;
   int dim;
   int i,N;
   float p,B,Jint,diferencia,mag,*pacep;
@@ -31,6 +31,7 @@ int main (int argc, char *argv[])
   pacep=(float*) malloc(sizeof(float));
   fp=fopen("MMCEn.dat","w");
   fp2=fopen("MMCMag.dat","a");
+  fp3=fopen("MMCAnMag.dat","a");
    *semilla=S;
    p=0.5;
    dim=8;
@@ -47,12 +48,6 @@ int main (int argc, char *argv[])
    red=(int*) malloc(dim*dim*sizeof(int));  
    poblar(red,p,dim,semilla);
    cborde(red,dim);
-   mag=magnetizacion(red,dim);
-   diferencia=mag-tanh(B);
-   fprintf(fp2,"--------------------------------------------- \n");
-   fprintf(fp2,"--------------------------------------------- \n");
-   fprintf(fp2,"B= %f J=  %f \n", B, Jint);
-   fprintf(fp2,"%d %f %f \n", 0, mag, diferencia);
 //  imprimir(red,dim);
    fprintf(fp,"%d %f \n", 0, hamiltoniano(red,dim,Jint,B));  
 //  flipeo (red,dim,Jint,B,semilla);
@@ -63,14 +58,13 @@ int main (int argc, char *argv[])
    *pacep=0.0;
    cborde(red,dim);
    flipeo (red,dim,Jint,B,semilla,pacep);
-   fprintf(fp,"%d %f \n", i+1, hamiltoniano(red,dim,Jint,B));  
-   mag=magnetizacion(red,dim);
-   diferencia=mag-tanh(B);
-   *pacep=*pacep/((dim-2)*(dim-2));
-   fprintf(fp2,"%d %f %f %f \n", i+1, mag, diferencia, *pacep);
+
 //   *semilla=S+i;
 //   poblar(red,p,dim,semilla);
    }
+   mag=magnetizacion(red,dim);
+   fprintf(fp2,"%f %f \n", B, mag);
+   fprintf(fp3,"%f %f \n", B, tanh(B));
 //   cborde(red,dim);
 //  imprimir(red,dim);  
 //  fprintf(fp2,"%f %f \n", B, magnetizacion(red,dim));
@@ -78,6 +72,7 @@ int main (int argc, char *argv[])
   free(semilla);
   fclose(fp);
   fclose(fp2);
+  fclose(fp3);
   return 0;
 }
 
