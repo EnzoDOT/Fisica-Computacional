@@ -158,7 +158,7 @@ void aceptacion (int *red, int dim, float Delta, float *energia, float *mag, int
       *(red+dim-1+j*dim)=*(red+1+j*dim); 
       *(red+i+(dim-1)*dim)=*(red+i+dim); 
       *energia=*energia+Delta;
-      *mag=*mag+*(red+i+j*dim)/((float)(dim-2)*(dim-2));   
+      *mag=*mag+*(red+i+j*dim)*2.0/((float)(dim-2)*(dim-2));   
       fprintf(fp2," %f %f \n", *pacep, *mag);
       fprintf(fp,"%f %f \n", *pacep, *energia); 
       }
