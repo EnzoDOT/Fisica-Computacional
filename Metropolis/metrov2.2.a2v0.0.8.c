@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-/*Percolar por Pedro y Enzo. Mayo 2019*/
+/*Percolar por Pedro y Enzo. Mayo 2019*
+Problema 2c, antiferro*/
 
 #define M 2147483647
 #define A 16807
@@ -47,8 +48,8 @@ int main (int argc, char *argv[])
      sscanf(argv[4],"%f",&Jint);
      sscanf(argv[5],"%f",&B);
      }
-  jp=0.1;
-  for(Jint=0.1; Jint<=0.7; Jint=Jint+jp) 
+  jp=-0.1;
+  for(Jint=-0.1; Jint>-0.7; Jint=Jint+jp) 
    {
    sprintf(filename,"MMCEn_L=%d_J=%3.2f_B=%3.2f.dat",dim,Jint,B);
    FILE *fp=fopen(filename,"w");

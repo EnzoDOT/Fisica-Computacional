@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-/*Percolar por Pedro y Enzo. Mayo 2019*/
+/*Percolar por Pedro y Enzo. Mayo 2019
+Problema 2. e), interacción a segundos vecinos*/
 
 #define M 2147483647
 #define A 16807
@@ -47,9 +48,9 @@ int main (int argc, char *argv[])
      sscanf(argv[4],"%f",&Jint);
      sscanf(argv[5],"%f",&B);
      }
-  jp=0.1;
-  for(Jint=0.1; Jint<=0.7; Jint=Jint+jp) 
-   {
+  jp=0.01;
+//  for(Jint=0.41; Jint<=0.5; Jint=Jint+jp) 
+//   {
    sprintf(filename,"MMCEn_L=%d_J=%3.2f_B=%3.2f.dat",dim,Jint,B);
    FILE *fp=fopen(filename,"w");
    sprintf(filename,"MMCMag_L=%d_J=%3.2f_B=%3.2f.dat",dim,Jint,B);
@@ -78,7 +79,7 @@ int main (int argc, char *argv[])
   free(semilla);
   fclose(fp);
   fclose(fp2);
-  }
+//  }
   return 0;
 }
 
@@ -141,7 +142,7 @@ void flipeo (int *red, int dim, float Jint, float B, float *energia, float *mag,
    {
    for(i=1;i<dim-1;i++)
     {
-     suma=*(red+i-1+j*dim)+*(red+i+1+j*dim)+*(red+i+(j-1)*dim)+*(red+i+(j+1)*dim);
+     suma=*(red+i-1+j*dim)+*(red+i+1+j*dim)+*(red+i+(j-1)*dim)+*(red+i+(j+1)*dim)-(*(red+i-1+(j+1)*dim)+*(red+i+1+(j+1)*dim)+*(red+i-1+(j-1)*dim)+*(red+i+1+(j-1)*dim));
      Delta=*(red+i+j*dim)*2*suma*Jint+*(red+i+j*dim)*2*B;
      aceptacion(red,dim,Delta,energia,mag,i,j,semilla,pacep,fp,fp2);
      fprintf(fp2," %f %f \n", *pacep, *mag);
@@ -178,7 +179,7 @@ float hamiltoniano (int *red, int dim, float Jint, float B)
    {for(i=1;i<dim-1;i++)
     {      
     energiaB=energiaB+*(red+i+j*dim); 
-    energiaJ=energiaJ+*(red+i+1+j*dim)+*(red+i+(j+1)*dim);
+    energiaJ=energiaJ+*(red+i+1+j*dim)+*(red+i+(j+1)*dim)-*(red+i+1+(j+1)*dim);
     }
    }
     energiaB=B*energiaB+Jint*energiaJ;

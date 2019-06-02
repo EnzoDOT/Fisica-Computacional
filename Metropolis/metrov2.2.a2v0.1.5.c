@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 /*Percolar por Pedro y Enzo. Mayo 2019*/
+/*flipeo aleatorio*/
 
 #define M 2147483647
 #define A 16807
@@ -26,9 +27,10 @@ int main (int argc, char *argv[])
   char filename[255]; 
   int dim;
   int i,N;
-  float p,B,Jint,*pacep,*energia,*mag,jp;
-  int *semilla;
+  float p,B,Jint,*pacep,*energia,*mag;
+  int *semilla,*semilla2;
   semilla=(int*) malloc(sizeof(int));
+  semilla2=(int*) malloc(sizeof(int));
   pacep=(float*) malloc(sizeof(float));
   energia=(float*) malloc(sizeof(float));
   mag=(float*) malloc(sizeof(float));
@@ -47,9 +49,8 @@ int main (int argc, char *argv[])
      sscanf(argv[4],"%f",&Jint);
      sscanf(argv[5],"%f",&B);
      }
-  jp=0.1;
-  for(Jint=0.1; Jint<=0.7; Jint=Jint+jp) 
-   {
+//  for(Jint=0.6; Jint<=0.6; Jint=Jint+0.1) 
+//   {
    sprintf(filename,"MMCEn_L=%d_J=%3.2f_B=%3.2f.dat",dim,Jint,B);
    FILE *fp=fopen(filename,"w");
    sprintf(filename,"MMCMag_L=%d_J=%3.2f_B=%3.2f.dat",dim,Jint,B);
@@ -57,6 +58,7 @@ int main (int argc, char *argv[])
    *mag=0.0;
    *energia=0.0;
    *semilla=S;
+   *semilla2=S;
 
    red=(int*) malloc(dim*dim*sizeof(int));  
    poblar(red,p,dim,semilla);
@@ -69,7 +71,7 @@ int main (int argc, char *argv[])
   for(i=0; i<N;i++)
    {
 //   cborde(red,dim);
-   flipeo (red,dim,Jint,B,energia,mag,semilla,pacep,fp,fp2); 
+   flipeo (red,dim,Jint,B,energia,mag,semilla,pacep,fp,fp2,semilla2); 
 //   cborde(red,dim); 
    }
 //   cborde(red,dim);
@@ -78,7 +80,7 @@ int main (int argc, char *argv[])
   free(semilla);
   fclose(fp);
   fclose(fp2);
-  }
+//  }
   return 0;
 }
 

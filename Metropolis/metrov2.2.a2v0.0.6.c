@@ -26,7 +26,7 @@ int main (int argc, char *argv[])
   char filename[255]; 
   int dim;
   int i,N;
-  float p,B,Jint,*pacep,*energia,*mag,jp;
+  float p,B,Jint,*pacep,*energia,*mag;
   int *semilla;
   semilla=(int*) malloc(sizeof(int));
   pacep=(float*) malloc(sizeof(float));
@@ -34,7 +34,7 @@ int main (int argc, char *argv[])
   mag=(float*) malloc(sizeof(float));
 //  fp=fopen("MMCEn.dat","w");
 //  fp2=fopen("MMCMag.dat","w");
-
+   *semilla=S;
    p=0.5;
    dim=8;
    N=100;
@@ -47,8 +47,7 @@ int main (int argc, char *argv[])
      sscanf(argv[4],"%f",&Jint);
      sscanf(argv[5],"%f",&B);
      }
-  jp=0.1;
-  for(Jint=0.1; Jint<=0.7; Jint=Jint+jp) 
+  for(Jint=0.41; Jint<=0.5; Jint=Jint+0.01) 
    {
    sprintf(filename,"MMCEn_L=%d_J=%3.2f_B=%3.2f.dat",dim,Jint,B);
    FILE *fp=fopen(filename,"w");
@@ -56,7 +55,6 @@ int main (int argc, char *argv[])
    FILE *fp2=fopen(filename,"w");
    *mag=0.0;
    *energia=0.0;
-   *semilla=S;
 
    red=(int*) malloc(dim*dim*sizeof(int));  
    poblar(red,p,dim,semilla);
@@ -70,7 +68,7 @@ int main (int argc, char *argv[])
    {
 //   cborde(red,dim);
    flipeo (red,dim,Jint,B,energia,mag,semilla,pacep,fp,fp2); 
-//   cborde(red,dim); 
+   cborde(red,dim); 
    }
 //   cborde(red,dim);
 //  imprimir(red,dim);
@@ -141,8 +139,8 @@ void flipeo (int *red, int dim, float Jint, float B, float *energia, float *mag,
    {
    for(i=1;i<dim-1;i++)
     {
-     suma=*(red+i-1+j*dim)+*(red+i+1+j*dim)+*(red+i+(j-1)*dim)+*(red+i+(j+1)*dim);
-     Delta=*(red+i+j*dim)*2*suma*Jint+*(red+i+j*dim)*2*B;
+     suma=(float)*(red+i-1+j*dim)+(float)*(red+i+1+j*dim)+(float)*(red+i+(j-1)*dim)+(float)*(red+i+(j+1)*dim);
+     Delta=(float)*(red+i+j*dim)*2.0*suma*Jint+*(red+i+j*dim)*2.0*B;
      aceptacion(red,dim,Delta,energia,mag,i,j,semilla,pacep,fp,fp2);
      fprintf(fp2," %f %f \n", *pacep, *mag);
      fprintf(fp,"%f %f \n", *pacep, *energia); 
@@ -152,18 +150,12 @@ void flipeo (int *red, int dim, float Jint, float B, float *energia, float *mag,
 
 void aceptacion (int *red, int dim, float Delta, float *energia, float *mag, int i, int j, int *semilla, float *pacep, FILE *fp, FILE *fp2)
 {     float p;
-      int ii,jj;
       p=exp(-Delta);
       *pacep=*pacep+1;
       if(irandom(semilla)<=p)  
       {
-       ii=(i+dim-2)%(dim-2);
-       jj=(j+dim-2)%(dim-2);
        *(red+i+j*dim)=*(red+i+j*dim)*(-1);
-       *(red+ii+j*dim)=*(red+i+j*dim); 
-       *(red+i+jj*dim)=*(red+i+j*dim); 
-       *(red+dim-1+j*dim)=*(red+1+j*dim); 
-       *(red+i+(dim-1)*dim)=*(red+i+dim); 
+       cborde(red,dim); 
        *energia=*energia+Delta;
        *mag=*mag+*(red+i+j*dim)*2.0/((float)(dim-2)*(dim-2));   
       }
