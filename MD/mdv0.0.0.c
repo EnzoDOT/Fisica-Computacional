@@ -10,16 +10,17 @@
 #define R 2836  
 #define S 2
 
-
 float irandom(int *semilla);
-float gaussiana (float mu, float sigma);
+float gaussiana (float mu, float sigma, int *semilla);
+float set_box(float *posicion; int N; float L)
+void set_v(float *v; int N; float T,int *semilla)
 void imprimir (int *red, int dim);
 
 int main (int argc, char *argv[])
 { 
   FILE *fp, *fp2;
   int i,N;
-  float *posicion;
+  float *posicion,dL;
   int *semilla;
   semilla=(int*) malloc(sizeof(int));
   *semilla=S;
@@ -49,19 +50,19 @@ float irandom(int *semilla)
   return (float)x;
 }
 
-float gaussiana(mu, sigma)
+float gaussiana(mu, sigma, *semilla)
 { 
   int n=10;
   float z=0.0;
   float x;
   for(int i=0; i<n; i++)
-  {z+=irandom(); 
+  {z+=irandom(semilla); 
   }
   z=sqrt(12.0)*(z/n - 0.5);
   return (float)z*sigma+mu;
 }
 
-void set_box(float *posicion; int N; float L)
+float set_box(float *posicion; int N; float L)
 { int n=cbrt(N); i=0;
   float dL=L/n;
   for(int x=0; x<n; x++)
@@ -74,5 +75,46 @@ void set_box(float *posicion; int N; float L)
      }
     }  
   }
+ return dL; 
 }
+
+void set_v(float *v; int N; float T,int *semilla)
+{ float sigma=sqrt(N);
+  for (i=0; i<3*N;i++)
+  {
+  v[i]=gaussiana(0.0,sigma,semilla);
+  }
+  float vcm[3]={0,0,0};
+  for(i=0;i<N;i++)
+  {
+   for(k=0;k<3;k++)
+   {
+    vcm[k]+=v[3*i+k]/N;
+   }
+  }
+  for(i=0;i<N;i++)
+  {
+   for(k=0;k<3;k++)
+   {
+    v[3*i+k]-=vcm[k];
+   }
+  }
+}
+
+void set_potencial(float *Vlj,float *Flj, int N, float L)
+{  
+   int n=cbrt(N); 
+   float dL=L/n,r; 
+   Vlj=(float*) malloc(2.5/dL*sizeof(float)); 
+   Flj=(float*) malloc(2.5/dL*sizeof(float)); 
+   for (i=1; i==(int)(2.5/dL);i=i++)
+   {
+    *(r+i)=i*dL;
+    *(Vlj+i)=4.0*(pow(r, -12.0)-pow(r, -6.0));
+    *(Flj+i)=24.0*(2.0*pow(r, -13.0)-pow(r, -7.0));
+   }
+}
+
+
+
 
