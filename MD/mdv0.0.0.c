@@ -12,21 +12,29 @@
 
 float irandom(int *semilla);
 float gaussiana (float mu, float sigma, int *semilla);
-float set_box(float *posicion; int N; float L)
-void set_v(float *v; int N; float T,int *semilla)
+void set_box(float *posicion, int N, float L)
+void set_v(float *v, int N, float T, int *semilla)
 void imprimir (int *red, int dim);
 
 int main (int argc, char *argv[])
 { 
   FILE *fp, *fp2;
   int i,N;
-  float *posicion,dL;
+  float *posicion,dL,*Vlj,*Flj,*r,*r2;
   int *semilla;
+
+  n=cbrt(N);
+  float dL=L/n;  
+  int gf=(int) 2.5/(100.0*dL)   //Grilla para interpolar potencial, fuerzas y distancias
+  Vlj=(float*) malloc(gf*sizeof(float));
+  Flj=(float*) malloc(gf*sizeof(float));
+  r=(float*) malloc(gf*sizeof(float));
+  r2=(float*) malloc(gf*sizeof(float));
   semilla=(int*) malloc(sizeof(int));
   *semilla=S;
   posicion=(float*) malloc(3*N*sizeof(float)); 
-   fp=fopen("md1energia.dat","w");
-   fp2=fopen("md.dat","w");
+  fp=fopen("md1energia.dat","w");
+  fp2=fopen("md.dat","w");
 
    N=100;
    if(argc==2)
@@ -56,13 +64,14 @@ float gaussiana(mu, sigma, *semilla)
   float z=0.0;
   float x;
   for(int i=0; i<n; i++)
-  {z+=irandom(semilla); 
+  {
+   z+=irandom(semilla);
   }
-  z=sqrt(12.0)*(z/n - 0.5);
+  z=sqrt(12.0*n)*(z/n - 0.5);
   return (float)z*sigma+mu;
 }
 
-float set_box(float *posicion; int N; float L)
+void set_box(float *posicion; int N; float L)
 { int n=cbrt(N); i=0;
   float dL=L/n;
   for(int x=0; x<n; x++)
@@ -75,7 +84,6 @@ float set_box(float *posicion; int N; float L)
      }
     }  
   }
- return dL; 
 }
 
 void set_v(float *v; int N; float T,int *semilla)
@@ -101,18 +109,28 @@ void set_v(float *v; int N; float T,int *semilla)
   }
 }
 
-void set_potencial(float *Vlj,float *Flj, int N, float L)
+void set_tablas(float *Vlj,float *Flj, float *r, float *r2, int N, float L)
 {  
    int n=cbrt(N); 
    float dL=L/n,r; 
-   Vlj=(float*) malloc(2.5/dL*sizeof(float)); 
-   Flj=(float*) malloc(2.5/dL*sizeof(float)); 
-   for (i=1; i==(int)(2.5/dL);i=i++)
+   for (i=1; i<gf+1;i=i++)
    {
     *(r+i)=i*dL;
-    *(Vlj+i)=4.0*(pow(r, -12.0)-pow(r, -6.0));
-    *(Flj+i)=24.0*(2.0*pow(r, -13.0)-pow(r, -7.0));
+    *(r2+i)=(i*dL)*(i*dL);
+    *(Vlj+i)=4.0*(pow(*(r+i), -12.0)-pow(*(r+i), -6.0));
+    *(Flj+i)=24.0*(2.0*pow(*(r+i), -13.0)-pow(*(r+i), -7.0));
    }
+}
+
+float norma(float *posicion, int i, int j)
+{  
+   int n=cbrt(N); 
+   float dL=L/n,r; 
+   Dx=*(posicion+3*i)-*(posicion+3*j);
+   Dy=*(posicion+3*i+1)-*(posicion+3*j+1);
+   Dz=*(posicion+3*i+2)-*(posicion+3*j+2);
+   n2=sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
+  return (float)n2;
 }
 
 
