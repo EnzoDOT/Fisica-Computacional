@@ -17,7 +17,7 @@ void set_box(double *posicion, double n, double L);
 void set_v(double *v, int N, double T, int *semilla);
 void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt);
 void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
-double deltax(double *posicion1, double *posicion2, double L);
+double deltax(double *posicion, int i ,int j ,int p, double L);
 void verlet(double *posicion, double *v, double *fuerzas, double dt, double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2);
 double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
 
@@ -31,7 +31,6 @@ int main (int argc, char *argv[])
   fp2=fopen("md.dat","w");
    L=2.0;
    T= 1.0;
-   N=50;
    tmax=10.0;
    N=27;
    gf=250;
@@ -49,7 +48,7 @@ int main (int argc, char *argv[])
   dt=tmax/tsteps;
   sfreq=tsteps/10;
   n=cbrt(N);
-  dLt=2.5/(gf); /*Grilla para interpolar potencial,
+  dLt=2.5/((double) gf); /*Grilla para interpolar potencial,
                               fuerzas y distancias, Ntablas=5000.0*/
   rc2=(double) 2.5*2.5;
   gf=(int)2.5/dLt;
@@ -125,8 +124,8 @@ double gaussiana(double mu, double sigma, int *semilla)
 
 void set_box(double *posicion, double n, double L)
 { int i,x,y,z;
-  double dL=L/n;
   i=0;
+  double dL=L/n;
   for(x=0; x<(int)n; x++)
   {for (y=0; y<(int)n; y++)
     {for(z=0; z<(int)n; z++)
@@ -183,9 +182,9 @@ void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, do
    {
     for (j=0; j<i;j++)    
     {
-     Dx=deltax(posicion+3*i,posicion+3*j,L);
-     Dy=deltax(posicion+3*i+1,posicion+3*j+1,L);
-     Dz=deltax(posicion+3*i+2,posicion+3*j+2,L);
+     Dx=deltax(posicion,i,j,0,L);
+     Dy=deltax(posicion,i,j,1,L);
+     Dz=deltax(posicion,i,j,2,L);
      n2=Dx*Dx*+Dy*Dy+Dz*Dz;
 
       if(n2<rc2)
@@ -209,10 +208,10 @@ void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, do
     }  
    }
 
-double deltax(double *posicion1, double *posicion2, double L)
+double deltax(double *posicion, int i ,int j ,int p, double L)
 {   
    double Dx; 
-   Dx=*(posicion1)-*(posicion2);
+   Dx=*(posicion+3*i+p)-*(posicion+3*j+p);
    if(Dx>L/2.0) Dx=Dx-L;
    if(Dx<-L/2.0) Dx=Dx+L;
 
@@ -270,9 +269,9 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, dou
     for (j=0; j<i;j++)    
     {
      Vint=0.0;
-     Dx=deltax(posicion+3*i,posicion+3*j, L);
-     Dy=deltax(posicion+3*i+1,posicion+3*j+1, L);
-     Dz=deltax(posicion+3*i+2,posicion+3*j+2, L);
+     Dx=deltax(posicion,i,j,0,L);
+     Dy=deltax(posicion,i,j,1,L);
+     Dz=deltax(posicion,i,j,2,L);
      n2=Dx*Dx*+Dy*Dy+Dz*Dz;
       if(n2<rc2)
      {
