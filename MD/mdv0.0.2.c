@@ -12,20 +12,29 @@
 
 double irandom(int *semilla);
 double gaussiana (double mu, double sigma, int *semilla);
-void set_box(double *posicion, int N, double L)
-void set_v(double *v, int N, double T, int *semilla)
-void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int * gf, double *dLt)
-void interaccion(double *posicion, *double *fuerzas, double *Vlj, double *Flj, double *r, double *r2, double *dLt )
-double deltax(double *posicion1, double *posicion2)
+void set_box(double *posicion, double n, double L);
+void set_v(double *v, int N, double T, int *semilla);
+void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt);
+void interaccion(double *posicion, double *fuerzas, \
+        double *Vlj, double *Flj, double *r, double *r2, \
+        double dLt, double rc2, int N, double L);
+double deltax(double *posicion1, double *posicion2, double L);
 
-void imprimir (int *red, int dim);
+void imprimir(double *posicion, int N, double L,double t);
+void verlet(double *posicion, double *v, double *fuerzas, double dt, \
+            double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, \
+            double L, double rc2);
+double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+            double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, \
+            int N, double L);
 
 int main (int argc, char *argv[])
 { 
   FILE *fp, *fp2;
-  int i,N;
-  double *posicion,dL,*Vlj,*Flj,*r,*r2,*fuerzas,*n,*rc2;
-  int *semilla,*gf;
+  int i,N,sfreq,tsteps;
+  double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,dLt;
+
+  int *semilla,gf;
 
 //  n=(double*) cbrt(N); //Para generar ci en sc
 //  double dL=L/n;  
@@ -33,27 +42,29 @@ int main (int argc, char *argv[])
   fp=fopen("md1energia.dat","w");
   fp2=fopen("md.dat","w");
 
+
    L=10;
    T=3.0;
    N=50;
    tmax=100.0;
    N=100;
-   Ntablas=5000.0;
+   gf=5000;
    tsteps=1000;
    if(argc==6)
-    {sscanf(argv[1],"%d",&L);
-     sscanf(argv[2],"%f",&T);
+    {sscanf(argv[1],"%lf",&L);
+     sscanf(argv[2],"%lf",&T);
      sscanf(argv[3],"%d",&N);
-     sscanf(argv[4],"%f",&tmax);
+     sscanf(argv[4],"%lf",&tmax);
      sscanf(argv[5],"%d",&tsteps);
-     sscanf(argv[6],"%f",&Ntablas);
+     sscanf(argv[6],"%d",&gf);
      }
   dt=tmax/tsteps;
-  n=(double*) cbrt(N);
-  dLt=(double*) 2.5/(Ntablas) //Grilla para interpolar potencial,\
-                              fuerzas y distancias, Ntablas=5000.0
-  rc2=(double*) 2.5*2.5
-  int gf=(int*) 2.5/dLt
+  sfreq=tsteps/10;
+  n=(double) cbrt(N);
+  dLt=(double) 2.5/(gf); /*Grilla para interpolar potencial,
+                              fuerzas y distancias, Ntablas=5000.0*/
+  rc2=(double) 2.5*2.5;
+  gf=(int)2.5/dLt;
   Vlj=(double*) malloc(gf*sizeof(double));
   Flj=(double*) malloc(gf*sizeof(double));
   r=(double*) malloc(gf*sizeof(double));
@@ -62,11 +73,43 @@ int main (int argc, char *argv[])
   *semilla=S;
   posicion=(double*) malloc(3*N*sizeof(double));
   fuerzas=(double*) malloc(3*N*sizeof(double)); 
+  v=(double*) malloc(3*N*sizeof(double));
+  
+  set_box(posicion,n,L);
+  set_v(v, N, T, semilla);
+  set_tablas(Vlj, Flj, r, r2, gf, dLt);
+  interaccion(posicion, fuerzas, Vlj, Flj, r, r2, dLt, rc2, N, L);
 
+  for (i=0; i<tsteps;i++)
+  {
+   verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
+    // num % 2 computes the remainder when num is divided by 2
+   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+  }
+  
+
+  free(posicion);
+  free(fuerzas);
+  free(v);
   free(semilla);
+  free(Vlj);
+  free(Flj);
+  free(r);
+  free(r2);
   fclose(fp);
   fclose(fp2);
   return 0;
+}
+
+void imprimir (double *posicion, int N, double L,double t)
+{ int i;
+  char filename[255]; 
+   sprintf(filename,"Posicion_L=%lf_N=%4.2d_t=%lf.dat",L,N,t);
+   FILE *fp=fopen(filename,"w");
+  for(i=0;i<N;i++)
+  {
+   fprintf(fp,"%lf %lf %lf \n",*(posicion+3*i),*(posicion+3*i+1),*(posicion+3*i+2));       
+  }
 }
 
 double irandom(int *semilla)
@@ -80,11 +123,10 @@ double irandom(int *semilla)
   return (double)x;
 }
 
-double gaussiana(mu, sigma, *semilla)
-{ 
+double gaussiana(double mu, double sigma, int *semilla)
+{
   int n=10;
   double z=0.0;
-  double x;
   for(int i=0; i<n; i++)
   {
    z+=irandom(semilla);
@@ -93,7 +135,7 @@ double gaussiana(mu, sigma, *semilla)
   return (double)z*sigma+mu;
 }
 
-void set_box(double *posicion; int *n; double L)
+void set_box(double *posicion, double n, double L)
 { int i=0;
   double dL=L/n;
   for(int x=0; x<n; x++)
@@ -108,8 +150,9 @@ void set_box(double *posicion; int *n; double L)
   }
 }
 
-void set_v(double *v; int N; double T,int *semilla)
-{ double sigma=sqrt(N);
+void set_v(double *v, int N, double T,int *semilla)
+{ double sigma=sqrt(T);
+  int i,k;
   for (i=0; i<3*N;i++)
   {
   *(v+i)=gaussiana(0.0,sigma,semilla);
@@ -131,46 +174,47 @@ void set_v(double *v; int N; double T,int *semilla)
   }
 }
 
-void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int * gf, double *dLt)
+void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt)
 {  
-   int i;
-   for (i=1; i<gf+1;i=i++)
+   int i=0;
+   for (i=1;i<gf+1;i=i++)
    {
-    *(r+i)=i*dLt;
-    *(r2+i)=(i*dLt)*(i*dLt);
-    *(Vlj+i)=4.0*(pow(*(r+i), -12.0)-pow(*(r+i), -6.0))\
+    *(r+i-1)=i*dLt;
+    *(r2+i-1)=(i*dLt)*(i*dLt);
+    *(Vlj+i-1)=4.0*(pow(*(r+i), -12.0)-pow(*(r+i), -6.0))\
        - 4.0*(pow(2.5, -12.0)-pow(2.5, -6.0));
-    *(Flj+i)=24.0*(2.0*pow(*(r+i), -13.0)-pow(*(r+i), -7.0));
+    *(Flj+i-1)=24.0*(2.0*pow(*(r+i), -13.0)-pow(*(r+i), -7.0));
    }
 }
 
-void interaccion(double *posicion, *double *fuerzas, \
+void interaccion(double *posicion, double *fuerzas, \
         double *Vlj, double *Flj, double *r, double *r2, \
-        double *dLt, double *rc2 )
+        double dLt, double rc2, int N, double L)
 {  int i,j,indice;
    double n2,Fx,Fy,Fz,Dx,Dy,Dz; 
+
    for (i=1; i<N;i=i++)
    {
     for (j=0; j<i;j=j++)    
     {
-     Dx=deltax(posicion+3*i,posicion+3*j);
-     Dy=deltax(posicion+3*i+1,posicion+3*j+1);
-     Dz=deltax(posicion+3*i+2,posicion+3*j+2);
+     Dx=deltax(posicion+3*i,posicion+3*j,L);
+     Dy=deltax(posicion+3*i+1,posicion+3*j+1,L);
+     Dz=deltax(posicion+3*i+2,posicion+3*j+2,L);
      n2=Dx*Dx*+Dy*Dy+Dz*Dz;
 
       if(n2<rc2)
       {       
-       indice=(int)((n2-*(r+1))/(*dLt));
+       indice=(int)((n2-*(r+1))/dLt);
        Fx=Dx*(*(Flj+indice))/(*(r+indice));
        Fy=Dy*(*(Flj+indice))/(*(r+indice));
        Fz=Dz*(*(Flj+indice))/(*(r+indice));
 //.... interpolación lineal
-       Fx+=Dx*Dx*(*(Flj+indice+1)-*(Flj+indice+1))\ // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
-              /(*dLt);
+       Fx+=Dx*Dx*(*(Flj+indice+1)-*(Flj+indice+1))\
+              /dLt;                           // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
        Fy+=Dy*Dy*(*(Flj+indice+1)-*(Flj+indice+1))\
-              /(*dLt);
+              /dLt;
        Fz+=Dz*Dz*(*(Flj+indice+1)-*(Flj+indice+1))\
-              /(*dLt);
+              /dLt;
        *(fuerzas+3*i)+=Fx;
        *(fuerzas+3*i+1)+=Fy;
        *(fuerzas+3*i+2)+=Fz;
@@ -182,7 +226,7 @@ void interaccion(double *posicion, *double *fuerzas, \
     }  
    }
 
-double deltax(double *posicion1, double *posicion2)
+double deltax(double *posicion1, double *posicion2, double L)
 {  
    double Dx; 
    Dx=*(posicion1)-*(posicion2);
@@ -192,10 +236,11 @@ double deltax(double *posicion1, double *posicion2)
   return (double)Dx;
 }
 
-void verlet(double *posicion, double *v, double *fuerzas, double *dt, \
-            double *Vlj,double *Flj, double *r, double *r2, double *dLt)
+void verlet(double *posicion, double *v, double *fuerzas, double dt, \
+            double *Vlj,double *Flj, double *r, double *r2, double dLt, \
+           int N, double L, double rc2)
 { 
- 
+   int i;
    for (i=0; i<N;i=i++)//Primer paso de Verlet
    {   
     *(posicion+3*i)+=*(v+3*i)*dt+*(fuerzas+3*i)*dt*dt*0.5;
@@ -217,9 +262,9 @@ void verlet(double *posicion, double *v, double *fuerzas, double *dt, \
     *(v+3*i+2)+=*(fuerzas+3*i+2)*dt*0.5;
    }
 
-   interaccion(double *posicion, double *fuerzas, double *Vlj, \
-                     double *Flj, double *r, double *r2, double *dLt) //actualizo \
-                                                                  las fuerzas
+  interaccion(posicion, fuerzas, Vlj, Flj, r, r2, \
+        dLt, rc2, N, L);                                          /*actualizo 
+                                                                  las fuerzas*/
    for (i=0; i<N;i=i++)//Segundo paso de Verlet
    {   
     *(v+3*i)+=*(fuerzas+3*i)*dt*dt*0.5;
@@ -229,12 +274,14 @@ void verlet(double *posicion, double *v, double *fuerzas, double *dt, \
 
 }
 
-double hamiltoniano(double *posicion, double *v, double *fuerzas, double *dt, \
-            double *Vlj,double *Flj, double *r, double *r2, double *dLt, double *rc2)
+double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+            double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, \
+            int N, double L)
 { 
-   double p2,Vint,inter;
+   double p2,Vint,inter,Etot,Dx,Dy,Dz,n2;
+   int i,j,indice;
   // término de energía cinética
-   p2=0.0
+   p2=0.0;
    for (i=1; i<N;i=i++)
    {    
     p2+=*(v+3*i)*(*(v+3*i))+*(v+3*i+1)*(*(v+3*i+1))+*(v+3*i+2)*(*(v+3*i+2));
@@ -246,22 +293,22 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double *dt, \
    {
     for (j=0; j<i;j=j++)    
     {
-     Vint=0.0
-     Dx=deltax(posicion+3*i,posicion+3*j);
-     Dy=deltax(posicion+3*i+1,posicion+3*j+1);
-     Dz=deltax(posicion+3*i+2,posicion+3*j+2);
+     Vint=0.0;
+     Dx=deltax(posicion+3*i,posicion+3*j, L);
+     Dy=deltax(posicion+3*i+1,posicion+3*j+1, L);
+     Dz=deltax(posicion+3*i+2,posicion+3*j+2, L);
      n2=Dx*Dx*+Dy*Dy+Dz*Dz;
       if(n2<rc2)
      {
-       indice=(int)((n2-*(r+1))/(*dLt));
+       indice=(int)((n2-*(r+1))/dLt);
        Vint=(*(Vlj+indice))/(*(r+indice));
 //.... interpolación lineal
-       Vint+=(*(Vlj+indice+1)-*(Vlj+indice+1))\ // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
-              /(*dLt);
+       Vint+=(*(Vlj+indice+1)-*(Vlj+indice+1))\
+              /dLt;  // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
        inter+=Vint;
      }
    }
-   
+  }
    Etot=p2+inter;
    return Etot;
 }
