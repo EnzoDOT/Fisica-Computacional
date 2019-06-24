@@ -33,12 +33,12 @@ int main (int argc, char *argv[])
   int *semilla,gf;
   fp=fopen("md1energia.dat","w");
   fp2=fopen("md.dat","w");
-   L=9.0;
+   L=8.0;
    T= 1.0;
    tmax=10.0;
    N=27;
    gf=5000;
-   tsteps=20000;
+   tsteps=1000;
 
    if(argc==7)
     {sscanf(argv[1],"%lf",&L);
@@ -71,10 +71,10 @@ int main (int argc, char *argv[])
   freeforce(fuerzas, N);   
   interaccion(posicion,fuerzas,Vlj,Flj,r,r2,dLt,rc2,N,L); 
 
-  for(i=0;i<10;i++)
+  for(i=0;i<2;i++)
   {
-//   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
-   imprimir(fuerzas,N,L,i*dt);
+ //  if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
   }
   
@@ -178,6 +178,7 @@ void set_v(double *v, int N, double T,int *semilla)
 
 void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt)
 {  
+
    int i;
    for(i=1;i<gf+1;i++)
    {
@@ -186,10 +187,10 @@ void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double 
     *(Vlj+i-1)=4.0*(pow(*(r2+i-1), -6.0)-pow(*(r2+i-1), -3.0));
     *(Flj+i-1)=24.0*(2.0*pow(*(r2+i-1), -6.0)-pow(*(r2+i-1), -3.0))/(*(r2+i-1));
    }
+   
 }
 
-void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, \ 
-       double *r, double *r2, double dLt, double rc2, int N, double L)
+void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
 {  int i,j,indice;
    double n2,Fx,Fy,Fz,Dx,Dy,Dz,dr; 
 
@@ -200,19 +201,20 @@ void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, \
      Dx=deltax(posicion+3*i,posicion+3*j,L);
      Dy=deltax(posicion+3*i+1,posicion+3*j+1,L);
      Dz=deltax(posicion+3*i+2,posicion+3*j+2,L);
-     n2=Dx*Dx*+Dy*Dy+Dz*Dz;
+     n2=Dx*Dx+Dy*Dy+Dz*Dz;
       if(n2<rc2)
       {       
        n2=sqrt(n2);
        indice=(int)((n2-*(r))/dLt);
+       
        dr=n2-*(r+indice);
        Fx=Dx*(*(Flj+indice));
        Fy=Dy*(*(Flj+indice));
        Fz=Dz*(*(Flj+indice));
 //.... interpolación lineal
-/*       Fx+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
+       Fx+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
        Fy+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt;
-       Fz+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt;*/
+       Fz+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt;
        *(fuerzas+3*i)+=Fx;
        *(fuerzas+3*i+1)+=Fy;
        *(fuerzas+3*i+2)+=Fz;
@@ -245,12 +247,12 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
     *(posicion+3*i+1)+=*(v+3*i+1)*dt+*(fuerzas+3*i+1)*dt*dt*0.5;
     *(posicion+3*i+2)+=*(v+3*i+2)*dt+*(fuerzas+3*i+2)*dt*dt*0.5;
 //  Aplico PBC
-    if(*(posicion+3*i)>L) *(posicion+3*i)=*(posicion+3*i)-L;
-    if(*(posicion+3*i+1)>L) *(posicion+3*i+1)=*(posicion+3*i+1)-L;
-    if(*(posicion+3*i+2)>L) *(posicion+3*i+2)=*(posicion+3*i+2)-L;
-    if(*(posicion+3*i)<0.0) *(posicion+3*i)=*(posicion+3*i)+L;
-    if(*(posicion+3*i+1)<0.0) *(posicion+3*i+1)=*(posicion+3*i+1)+L;
-    if(*(posicion+3*i+2)<0.0) *(posicion+3*i+2)=*(posicion+3*i+2)+L;
+    if(*(posicion+3*i)>L/2) *(posicion+3*i)=*(posicion+3*i)-L;
+    if(*(posicion+3*i+1)>L/2) *(posicion+3*i+1)=*(posicion+3*i+1)-L;
+    if(*(posicion+3*i+2)>L/2) *(posicion+3*i+2)=*(posicion+3*i+2)-L;
+    if(*(posicion+3*i)<-L/2) *(posicion+3*i)=*(posicion+3*i)+L;
+    if(*(posicion+3*i+1)<-L/2) *(posicion+3*i+1)=*(posicion+3*i+1)+L;
+    if(*(posicion+3*i+2)<-L/2) *(posicion+3*i+2)=*(posicion+3*i+2)+L;
 /*    ****PREGUNTAR A GUILLE SI PUEDO USAR %L***** */
 
     *(v+3*i)+=*(fuerzas+3*i)*dt*0.5;
@@ -272,7 +274,7 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
 double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
  double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
 { 
-   double p2,Vint,inter,Etot,Dx,Dy,Dz,n2;
+   double p2,Vint,inter,Etot,Dx,Dy,Dz,n2,dr;
    int i,j,indice;
   // término de energía cinética
    p2=0.0;
@@ -297,9 +299,10 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
      { 
        n2=sqrt(n2);
        indice=(int)((n2-*(r))/dLt);
+       dr=n2-*(r+indice);
        Vint=(*(Vlj+indice));
 //.... interpolación lineal
-       Vint+=(n2-*(r+indice))*(*(Vlj+indice+1)-*(Vlj+indice))/dLt;  // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
+       Vint+=dr*(*(Vlj+indice+1)-*(Vlj+indice))/dLt;  // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
        inter+=Vint;
      }
    }
