@@ -16,10 +16,14 @@ double gaussiana (double mu, double sigma, int *semilla);
 void set_box(double *posicion, double n, double L);
 void set_v(double *v, int N, double T, int *semilla);
 void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt);
-void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
+void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, \
+double *r, double *r2, double dLt, double rc2, int N, double L);
 double deltax(double *posicion1, double *posicion2, double L);
-void verlet(double *posicion, double *v, double *fuerzas, double dt, double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2);
-double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
+void verlet(double *posicion, double *v, double *fuerzas, double dt, \
+double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2);
+double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
+void freeforce(double *fuerzas, int N);
 
 int main (int argc, char *argv[])
 { 
@@ -29,13 +33,12 @@ int main (int argc, char *argv[])
   int *semilla,gf;
   fp=fopen("md1energia.dat","w");
   fp2=fopen("md.dat","w");
-   L=2.0;
+   L=9.0;
    T= 1.0;
-   N=50;
    tmax=10.0;
    N=27;
-   gf=250;
-   tsteps=100;
+   gf=5000;
+   tsteps=20000;
 
    if(argc==7)
     {sscanf(argv[1],"%lf",&L);
@@ -45,14 +48,12 @@ int main (int argc, char *argv[])
      sscanf(argv[5],"%d",&tsteps);
      sscanf(argv[6],"%d",&gf);
      }
-  printf("Hola");
   dt=tmax/tsteps;
   sfreq=tsteps/10;
   n=cbrt(N);
   dLt=2.5/(gf); /*Grilla para interpolar potencial,
                               fuerzas y distancias, Ntablas=5000.0*/
   rc2=(double) 2.5*2.5;
-  gf=(int)2.5/dLt;
   Vlj=(double*) malloc(gf*sizeof(double));
   Flj=(double*) malloc(gf*sizeof(double));
   r=(double*) malloc(gf*sizeof(double));
@@ -62,17 +63,19 @@ int main (int argc, char *argv[])
   posicion=(double*) malloc(3*N*sizeof(double));
   fuerzas=(double*) malloc(3*N*sizeof(double)); 
   v=(double*) malloc(3*N*sizeof(double));
-//  printf("Hola")  
+
   set_box(posicion,n,L);
   set_v(v, N, T, semilla);
   set_tablas(Vlj, Flj, r, r2, gf, dLt);
-  interaccion(posicion, fuerzas, Vlj, Flj, r, r2, dLt, rc2, N, L);
 
-  for(i=0;i<tsteps;i++)
+  freeforce(fuerzas, N);   
+  interaccion(posicion,fuerzas,Vlj,Flj,r,r2,dLt,rc2,N,L); 
+
+  for(i=0;i<10;i++)
   {
+//   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+   imprimir(fuerzas,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
-    // num % 2 computes the remainder when num is divided by 2
-   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
   }
   
   free(posicion);
@@ -95,7 +98,17 @@ void imprimir (double *posicion, int N, double L,double t)
    FILE *fp=fopen(filename,"w");
   for(i=0;i<N;i++)
   {
-   fprintf(fp,"%lf %lf %lf \n",*(posicion+3*i),*(posicion+3*i+1),*(posicion+3*i+2));       
+   fprintf(fp,"%f %f %f \n",*(posicion+3*i),*(posicion+3*i+1),*(posicion+3*i+2));       
+  }
+}
+
+void freeforce(double *fuerzas, int N)
+{ int i;
+  for(i=0;i<N;i++)
+  {
+    *(fuerzas+3*i)=0.0;
+    *(fuerzas+3*i+1)=0.0;
+    *(fuerzas+3*i+2)=0.0;         
   }
 }
 
@@ -170,14 +183,15 @@ void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double 
    {
     *(r+i-1)=i*dLt;
     *(r2+i-1)=(i*dLt)*(i*dLt);
-    *(Vlj+i-1)=4.0*(pow(*(r+i), -12.0)-pow(*(r+i), -6.0)) - 4.0*(pow(2.5, -12.0)-pow(2.5, -6.0));
-    *(Flj+i-1)=24.0*(2.0*pow(*(r+i), -13.0)-pow(*(r+i), -7.0));
+    *(Vlj+i-1)=4.0*(pow(*(r2+i-1), -6.0)-pow(*(r2+i-1), -3.0));
+    *(Flj+i-1)=24.0*(2.0*pow(*(r2+i-1), -6.0)-pow(*(r2+i-1), -3.0))/(*(r2+i-1));
    }
 }
 
-void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
+void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, \ 
+       double *r, double *r2, double dLt, double rc2, int N, double L)
 {  int i,j,indice;
-   double n2,Fx,Fy,Fz,Dx,Dy,Dz; 
+   double n2,Fx,Fy,Fz,Dx,Dy,Dz,dr; 
 
    for (i=1; i<N;i++)
    {
@@ -187,17 +201,18 @@ void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, do
      Dy=deltax(posicion+3*i+1,posicion+3*j+1,L);
      Dz=deltax(posicion+3*i+2,posicion+3*j+2,L);
      n2=Dx*Dx*+Dy*Dy+Dz*Dz;
-
       if(n2<rc2)
       {       
-       indice=(int)((n2-*(r+1))/dLt);
-       Fx=Dx*(*(Flj+indice))/(*(r+indice));
-       Fy=Dy*(*(Flj+indice))/(*(r+indice));
-       Fz=Dz*(*(Flj+indice))/(*(r+indice));
+       n2=sqrt(n2);
+       indice=(int)((n2-*(r))/dLt);
+       dr=n2-*(r+indice);
+       Fx=Dx*(*(Flj+indice));
+       Fy=Dy*(*(Flj+indice));
+       Fz=Dz*(*(Flj+indice));
 //.... interpolación lineal
-       Fx+=Dx*Dx*(*(Flj+indice+1)-*(Flj+indice+1))/dLt;                           // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
-       Fy+=Dy*Dy*(*(Flj+indice+1)-*(Flj+indice+1))/dLt;
-       Fz+=Dz*Dz*(*(Flj+indice+1)-*(Flj+indice+1))/dLt;
+/*       Fx+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
+       Fy+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt;
+       Fz+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt;*/
        *(fuerzas+3*i)+=Fx;
        *(fuerzas+3*i+1)+=Fy;
        *(fuerzas+3*i+2)+=Fz;
@@ -219,9 +234,11 @@ double deltax(double *posicion1, double *posicion2, double L)
   return (double)Dx;
 }
 
-void verlet(double *posicion, double *v, double *fuerzas, double dt, double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
+void verlet(double *posicion, double *v, double *fuerzas, double dt, double *Vlj, \
+double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
 { 
    int i;
+
    for (i=0; i<N;i++)//Primer paso de Verlet
    {   
     *(posicion+3*i)+=*(v+3*i)*dt+*(fuerzas+3*i)*dt*dt*0.5;
@@ -234,24 +251,26 @@ void verlet(double *posicion, double *v, double *fuerzas, double dt, double *Vlj
     if(*(posicion+3*i)<0.0) *(posicion+3*i)=*(posicion+3*i)+L;
     if(*(posicion+3*i+1)<0.0) *(posicion+3*i+1)=*(posicion+3*i+1)+L;
     if(*(posicion+3*i+2)<0.0) *(posicion+3*i+2)=*(posicion+3*i+2)+L;
-
-/*       ii=(i+dim-2)%(dim-2); ****PREGUNTAR A GUILLE SI PUEDO USAR %L*****
-       jj=(j+dim-2)%(dim-2); */
+/*    ****PREGUNTAR A GUILLE SI PUEDO USAR %L***** */
 
     *(v+3*i)+=*(fuerzas+3*i)*dt*0.5;
     *(v+3*i+1)+=*(fuerzas+3*i+1)*dt*0.5;
     *(v+3*i+2)+=*(fuerzas+3*i+2)*dt*0.5;
    }
+
+   freeforce(fuerzas, N);   
    interaccion(posicion,fuerzas,Vlj,Flj,r,r2,dLt,rc2,N,L); 
+   
    for (i=0; i<N;i++)//Segundo paso de Verlet
    {   
-    *(v+3*i)+=*(fuerzas+3*i)*dt*dt*0.5;
-    *(v+3*i+1)+=*(fuerzas+3*i+1)*dt*dt*0.5;
-    *(v+3*i+2)+=*(fuerzas+3*i+2)*dt*dt*0.5;
+    *(v+3*i)+=*(fuerzas+3*i)*dt*0.5;
+    *(v+3*i+1)+=*(fuerzas+3*i+1)*dt*0.5;
+    *(v+3*i+2)+=*(fuerzas+3*i+2)*dt*0.5;
    }
 }
 
-double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
+double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+ double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
 { 
    double p2,Vint,inter,Etot,Dx,Dy,Dz,n2;
    int i,j,indice;
@@ -275,11 +294,12 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, dou
      Dz=deltax(posicion+3*i+2,posicion+3*j+2, L);
      n2=Dx*Dx*+Dy*Dy+Dz*Dz;
       if(n2<rc2)
-     {
-       indice=(int)((n2-*(r+1))/dLt);
-       Vint=(*(Vlj+indice))/(*(r+indice));
+     { 
+       n2=sqrt(n2);
+       indice=(int)((n2-*(r))/dLt);
+       Vint=(*(Vlj+indice));
 //.... interpolación lineal
-       Vint+=(*(Vlj+indice+1)-*(Vlj+indice+1))/dLt;  // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
+       Vint+=(n2-*(r+indice))*(*(Vlj+indice+1)-*(Vlj+indice))/dLt;  // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
        inter+=Vint;
      }
    }
