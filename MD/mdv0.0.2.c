@@ -23,7 +23,7 @@ void verlet(double *posicion, double *v, double *fuerzas, double dt, \
 double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2);
 double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
 double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
-void freeforce(double *fuerzas, int N);
+void qlfta(double *fuerzas, int N);
 
 int main (int argc, char *argv[])
 { 
@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
    tmax=10.0;
    N=27;
    gf=5000;
-   tsteps=1000;
+   tsteps=10;
 
    if(argc==7)
     {sscanf(argv[1],"%lf",&L);
@@ -68,13 +68,13 @@ int main (int argc, char *argv[])
   set_v(v, N, T, semilla);
   set_tablas(Vlj, Flj, r, r2, gf, dLt);
 
-  freeforce(fuerzas, N);   
+  qlfta(fuerzas, N);   
   interaccion(posicion,fuerzas,Vlj,Flj,r,r2,dLt,rc2,N,L); 
 
   for(i=0;i<2;i++)
   {
- //  if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
-   imprimir(posicion,N,L,i*dt);
+   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+//   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
   }
   
@@ -102,13 +102,11 @@ void imprimir (double *posicion, int N, double L,double t)
   }
 }
 
-void freeforce(double *fuerzas, int N)
+void qlfta(double *fuerzas, int N) //¡Que la fuerza te acompañe!
 { int i;
-  for(i=0;i<N;i++)
+  for(i=0;i<3*N;i++)
   {
-    *(fuerzas+3*i)=0.0;
-    *(fuerzas+3*i+1)=0.0;
-    *(fuerzas+3*i+2)=0.0;         
+    *(fuerzas+i)=0.0;       
   }
 }
 
@@ -247,12 +245,12 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
     *(posicion+3*i+1)+=*(v+3*i+1)*dt+*(fuerzas+3*i+1)*dt*dt*0.5;
     *(posicion+3*i+2)+=*(v+3*i+2)*dt+*(fuerzas+3*i+2)*dt*dt*0.5;
 //  Aplico PBC
-    if(*(posicion+3*i)>L/2) *(posicion+3*i)=*(posicion+3*i)-L;
-    if(*(posicion+3*i+1)>L/2) *(posicion+3*i+1)=*(posicion+3*i+1)-L;
-    if(*(posicion+3*i+2)>L/2) *(posicion+3*i+2)=*(posicion+3*i+2)-L;
-    if(*(posicion+3*i)<-L/2) *(posicion+3*i)=*(posicion+3*i)+L;
-    if(*(posicion+3*i+1)<-L/2) *(posicion+3*i+1)=*(posicion+3*i+1)+L;
-    if(*(posicion+3*i+2)<-L/2) *(posicion+3*i+2)=*(posicion+3*i+2)+L;
+    if(*(posicion+3*i)>L) *(posicion+3*i)=*(posicion+3*i)-L;
+    if(*(posicion+3*i+1)>L) *(posicion+3*i+1)=*(posicion+3*i+1)-L;
+    if(*(posicion+3*i+2)>L) *(posicion+3*i+2)=*(posicion+3*i+2)-L;
+    if(*(posicion+3*i)<0.0) *(posicion+3*i)=*(posicion+3*i)+L;
+    if(*(posicion+3*i+1)<0.0) *(posicion+3*i+1)=*(posicion+3*i+1)+L;
+    if(*(posicion+3*i+2)<0.0) *(posicion+3*i+2)=*(posicion+3*i+2)+L;
 /*    ****PREGUNTAR A GUILLE SI PUEDO USAR %L***** */
 
     *(v+3*i)+=*(fuerzas+3*i)*dt*0.5;
@@ -260,7 +258,7 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
     *(v+3*i+2)+=*(fuerzas+3*i+2)*dt*0.5;
    }
 
-   freeforce(fuerzas, N);   
+   qlfta(fuerzas, N);   
    interaccion(posicion,fuerzas,Vlj,Flj,r,r2,dLt,rc2,N,L); 
    
    for (i=0; i<N;i++)//Segundo paso de Verlet
