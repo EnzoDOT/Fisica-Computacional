@@ -248,7 +248,7 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
     if(*(posicion+3*i+1)<0.0) *(posicion+3*i+1)=*(posicion+3*i+1)+L;
     if(*(posicion+3*i+2)<0.0) *(posicion+3*i+2)=*(posicion+3*i+2)+L;
 /*    ****PREGUNTAR A GUILLE SI PUEDO USAR %L***** (NO SE PUEDE) */
-     printf("%f %f %f \n",*(posicion+3*i),*(posicion+3*i+1),*(posicion+3*i+2) );
+//     printf("%f %f %f \n",*(posicion+3*i),*(posicion+3*i+1),*(posicion+3*i+2) );
     *(v+3*i)+=*(fuerzas+3*i)*dt*0.5;
     *(v+3*i+1)+=*(fuerzas+3*i+1)*dt*0.5;
     *(v+3*i+2)+=*(fuerzas+3*i+2)*dt*0.5;
