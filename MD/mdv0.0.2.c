@@ -191,7 +191,8 @@ void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double 
    {
     *(r+i-1)=i*dLt;
     *(r2+i-1)=(i*dLt)*(i*dLt);
-    *(Vlj+i-1)=4.0*(pow(*(r2+i-1), -6.0)-pow(*(r2+i-1), -3.0));
+    *(Vlj+i-1)=4.0*(pow(*(r2+i-1), -6.0)-pow(*(r2+i-1), -3.0))-\
+    4.0*(pow(2.5, -12.0)-pow(2.5, -6.0));;
     *(Flj+i-1)=24.0*(2.0*pow(*(r2+i-1), -6.0)-pow(*(r2+i-1), -3.0))/(*(r2+i-1));
    }
    
