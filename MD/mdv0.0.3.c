@@ -3,6 +3,8 @@
 #include <math.h>
 #include <time.h>
 /*Metropolis por Pedro y Enzo. Mayo 2019*/
+/* Esta versión difiere de la v0.0.2 en que no hago interpolacion */
+
 
 #define M 2147483647
 #define A 16807
@@ -21,7 +23,7 @@ double *r, double *r2, double dLt, double rc2, int N, double L);
 double deltax(double *posicion1, double *posicion2, double L);
 void verlet(double *posicion, double *v, double *fuerzas, double dt, \
 double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2);
-double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+double hamiltoniano(double *posicion, double *v, double *fuerzas, \
 double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
 void qlfta(double *fuerzas, int N);
 
@@ -31,7 +33,7 @@ int main (int argc, char *argv[])
   int i,N,sfreq,tsteps;
   double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,dLt;
   int *semilla,gf;
-
+//  fp=fopen("md1energia.dat","w");
   fp2=fopen("md.dat","w");
    L=8.0;
    T= 2.0; //En 1.0 estoy cerca de la transicion de fase.
@@ -76,7 +78,7 @@ int main (int argc, char *argv[])
 
   for(i=0;i<tsteps;i++)
   {
-   fprintf(fp,"%lf %lf \n",i*dt,hamiltoniano(posicion,v,fuerzas,dt,Vlj,Flj,r,r2,dLt,rc2,N,L)); 
+   fprintf(fp,"%lf %lf \n",i*dt,hamiltoniano(posicion,v,fuerzas,Vlj,Flj,r,r2,dLt,rc2,N,L)); 
    if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
 //   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
@@ -90,7 +92,7 @@ int main (int argc, char *argv[])
   free(Flj);
   free(r);
   free(r2);
-  fclose(fp);
+//  fclose(fp);
   fclose(fp2);
   return 0;
 }
@@ -194,7 +196,7 @@ void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double 
 
 void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
 {  int i,j,indice;
-   double n2,Fx,Fy,Fz,Dx,Dy,Dz,dr; 
+   double n2,Fx,Fy,Fz,Dx,Dy,Dz; 
 
    for (i=1; i<N;i++)
    {
@@ -206,17 +208,12 @@ void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, do
      n2=Dx*Dx+Dy*Dy+Dz*Dz;
       if(n2<rc2)
       {       
-       n2=sqrt(n2);
-       indice=(int)((n2-*(r))/dLt);
-       
-       dr=n2-*(r+indice);
+       indice=(int)((n2-*(r2))/(dLt));
+
        Fx=Dx*(*(Flj+indice));
        Fy=Dy*(*(Flj+indice));
        Fz=Dz*(*(Flj+indice));
-//.... interpolación lineal
-       Fx+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
-       Fy+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //Puedo no hacer la interpolacion para 5000
-       Fz+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //valores en la tabla.-
+
        *(fuerzas+3*i)+=Fx;
        *(fuerzas+3*i+1)+=Fy;
        *(fuerzas+3*i+2)+=Fz;
@@ -273,15 +270,15 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
    }
 }
 
-double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+double hamiltoniano(double *posicion, double *v, double *fuerzas , \
  double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
 { 
-   double p2,Vint,inter,Etot,Dx,Dy,Dz,n2,dr;
+   double p2,inter,Etot,Dx,Dy,Dz,n2;
    int i,j,indice;
   // término de energía cinética
    p2=0.0;
    inter=0.0;
-   for (i=0; i<N;i++)
+   for (i=1; i<N;i++)
    {    
     p2+=*(v+3*i)*(*(v+3*i))+*(v+3*i+1)*(*(v+3*i+1))+*(v+3*i+2)*(*(v+3*i+2));
    }
@@ -292,24 +289,18 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
    {
     for (j=0; j<i;j++)    
     {
-     Vint=0.0;
      Dx=deltax(posicion+3*i,posicion+3*j, L);
      Dy=deltax(posicion+3*i+1,posicion+3*j+1, L);
      Dz=deltax(posicion+3*i+2,posicion+3*j+2, L);
      n2=Dx*Dx+Dy*Dy+Dz*Dz;
       if(n2<rc2)
-     { 
-       n2=sqrt(n2);
-       indice=(int)((n2-*(r))/dLt);
-       dr=n2-*(r+indice);
-       Vint=(*(Vlj+indice));
-//.... interpolación lineal
-       Vint+=dr*(*(Vlj+indice+1)-*(Vlj+indice))/dLt;  // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
-       inter+=Vint;
+     {
+      indice=(int)((n2-*(r2))/(dLt));
+      inter+=(*(Vlj+indice));
      }
    }
   }
    Etot=p2+inter;
-   return Etot/N;
+   return Etot;
 }
 

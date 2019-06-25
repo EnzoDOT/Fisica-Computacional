@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 /*Metropolis por Pedro y Enzo. Mayo 2019*/
+/*Test colision dos partìculas*/
 
 #define M 2147483647
 #define A 16807
@@ -13,7 +14,7 @@
 void imprimir(double *posicion, int N, double L,double t);
 double irandom(int *semilla);
 double gaussiana (double mu, double sigma, int *semilla);
-void set_box(double *posicion, double n, double L);
+void set_box(double *posicion, double n, double L, int N);
 void set_v(double *v, int N, double T, int *semilla);
 void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt);
 void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, \
@@ -24,6 +25,7 @@ double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, dou
 double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
 double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
 void qlfta(double *fuerzas, int N);
+int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int frame);
 
 int main (int argc, char *argv[])
 { 
@@ -67,7 +69,7 @@ int main (int argc, char *argv[])
   fuerzas=(double*) malloc(3*N*sizeof(double)); 
   v=(double*) malloc(3*N*sizeof(double));
 
-  set_box(posicion,n,L);
+  set_box(posicion,n,L,N);
   set_v(v, N, T, semilla);
   set_tablas(Vlj, Flj, r, r2, gf, dLt);
 
@@ -77,7 +79,8 @@ int main (int argc, char *argv[])
   for(i=0;i<tsteps;i++)
   {
    fprintf(fp,"%lf %lf \n",i*dt,hamiltoniano(posicion,v,fuerzas,dt,Vlj,Flj,r,r2,dLt,rc2,N,L)); 
-   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+ //  if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+   if(i%sfreq==0) save_lammpstrj(filename, posicion, v, N, L, i);
 //   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
   }
@@ -138,44 +141,30 @@ double gaussiana(double mu, double sigma, int *semilla)
   return (double)z*sigma+mu;
 }
 
-void set_box(double *posicion, double n, double L)
+void set_box(double *posicion, double n, double L, int N)
 { int i,x,y,z;
   double dL=L/n;
   i=0;
-  for(x=0; x<(int)n; x++)
-  {for (y=0; y<(int)n; y++)
-    {for(z=0; z<(int)n; z++)
-     {*(posicion+3*i)=dL*(x+0.5);
-      *(posicion+3*i+1)=dL*(y+0.5);
-      *(posicion+3*i+2)=dL*(z+0.5);
-      i++;
+  for(i=0;i<N;i++)
+     {*(posicion+3*i)=1.0;
+      *(posicion+3*i+1)=1.0 + (double)(L*i/4.0);
+      *(posicion+3*i+2)=1.0;
      }
-    }  
-  }
 }
 
 void set_v(double *v, int N, double T,int *semilla)
 { double sigma=sqrt(T);
   int i,k;
-  for (i=0; i<3*N;i++)
+  for (i=0; i<N;i++)
   {
-  *(v+i)=gaussiana(0.0,sigma,semilla);
+  *(v+3*i)=0.0;
+  *(v+3*i+1)=1.0;
+  *(v+3*i+2)=0.0;
   }
-  double vcm[3]={0,0,0};
-  for(i=0;i<N;i++)
-  {
-   for(k=0;k<3;k++)
-   {
-    vcm[k]+=*(v+3*i+k)/N;
-   }
-  }
-  for(i=0;i<N;i++)
-  {
-   for(k=0;k<3;k++)
-   {
-    *(v+3*i+k)-=vcm[k];
-   }
-  }
+
+  *(v+3*1+1)=-1.0;
+
+
 }
 
 void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt)
@@ -214,9 +203,9 @@ void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, do
        Fy=Dy*(*(Flj+indice));
        Fz=Dz*(*(Flj+indice));
 //.... interpolación lineal
-       Fx+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
-       Fy+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //Puedo no hacer la interpolacion para 5000
-       Fz+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //valores en la tabla.-
+       Fx+=Dx*dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
+       Fy+=Dy*dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //Puedo no hacer la interpolacion para 5000
+       Fz+=Dz*dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //valores en la tabla.-
        *(fuerzas+3*i)+=Fx;
        *(fuerzas+3*i+1)+=Fy;
        *(fuerzas+3*i+2)+=Fz;
@@ -256,7 +245,7 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
     if(*(posicion+3*i+1)<0.0) *(posicion+3*i+1)=*(posicion+3*i+1)+L;
     if(*(posicion+3*i+2)<0.0) *(posicion+3*i+2)=*(posicion+3*i+2)+L;
 /*    ****PREGUNTAR A GUILLE SI PUEDO USAR %L***** (NO SE PUEDE) */
-
+     printf("%f %f %f \n",*(posicion+3*i),*(posicion+3*i+1),*(posicion+3*i+2) );
     *(v+3*i)+=*(fuerzas+3*i)*dt*0.5;
     *(v+3*i+1)+=*(fuerzas+3*i+1)*dt*0.5;
     *(v+3*i+2)+=*(fuerzas+3*i+2)*dt*0.5;
@@ -313,3 +302,20 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
    return Etot/N;
 }
 
+
+int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int frame){
+  FILE *fp;
+  if (frame) fp = fopen(filename, "a"); // Si frame==0, es el primero y por lo tanto
+  else fp = fopen(filename, "w");       // tiene que crear un nuevo archivo
+  // Header que usa lammps
+	fprintf(fp, "ITEM: TIMESTEP\n%d\nITEM: NUMBER OF ATOMS\n%d\nITEM: BOX BOUNDS pp pp pp\n", frame, N);
+	for(int l = 0; l < 3; l++){
+		fprintf(fp, "0 %f\n", L); // Limites de la caja en x-y-z
+	}
+	fprintf(fp, "ITEM: ATOMS id x y z vx vy vz \n"); // "Nombre de las columnas"
+	for(int i = 0; i < N; i++){
+		fprintf(fp, "%d %f %f %f %f %f %f\n", i, x[3*i], x[3*i+1], x[3*i+2], v[3*i], v[3*i+1], v[3*i+2]);
+	}
+  fclose(fp);
+  return 0;
+}
