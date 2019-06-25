@@ -24,15 +24,14 @@ double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, dou
 double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
 double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
 void qlfta(double *fuerzas, int N);
+int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int frame);
 
 int main (int argc, char *argv[])
 { 
-  FILE *fp2;
   int i,N,sfreq,tsteps;
   double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,dLt;
   int *semilla,gf;
 
-  fp2=fopen("md.dat","w");
    L=8.0;
    T= 2.0; //En 1.0 estoy cerca de la transicion de fase.
    tmax=10.0;
@@ -51,8 +50,12 @@ int main (int argc, char *argv[])
   char filename[255]; 
   sprintf(filename,"Energia_L=%lf_N=%4.2d.dat",L,N);
   FILE *fp=fopen(filename,"w");
+  
+  char filename2[255]; 
+  sprintf(filename2,"Visual_L=%lf_N=%4.2d.lammpstrj",L,N);
+  FILE *fp2=fopen(filename2,"w");
   dt=tmax/tsteps; //10^-3 como mìnimo
-  sfreq=tsteps/10;
+  sfreq=tsteps/100;
   n=cbrt(N);
   dLt=2.5/(gf); /*Grilla para interpolar potencial,
                               fuerzas y distancias, Ntablas=5000.0*/
@@ -77,7 +80,9 @@ int main (int argc, char *argv[])
   for(i=0;i<tsteps;i++)
   {
    fprintf(fp,"%lf %lf \n",i*dt,hamiltoniano(posicion,v,fuerzas,dt,Vlj,Flj,r,r2,dLt,rc2,N,L)); 
-   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+//   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
+   if(i%sfreq==0) save_lammpstrj(filename2, posicion, v, N, L, i);
+
 //   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
   }
@@ -214,9 +219,9 @@ void interaccion(double *posicion, double *fuerzas, double *Vlj, double *Flj, do
        Fy=Dy*(*(Flj+indice));
        Fz=Dz*(*(Flj+indice));
 //.... interpolación lineal
-       Fx+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
-       Fy+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //Puedo no hacer la interpolacion para 5000
-       Fz+=dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //valores en la tabla.-
+       Fx+=Dx*dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; // PREGUNTAR A GUILLE SI ESTO ES CORRECTO
+       Fy+=Dy*dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //Puedo no hacer la interpolacion para 5000
+       Fz+=Dz*dr*(*(Flj+indice+1)-*(Flj+indice))/dLt; //valores en la tabla.-
        *(fuerzas+3*i)+=Fx;
        *(fuerzas+3*i+1)+=Fy;
        *(fuerzas+3*i+2)+=Fz;
@@ -313,3 +318,19 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
    return Etot/N;
 }
 
+int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int frame){
+  FILE *fp;
+  if (frame) fp = fopen(filename, "a"); // Si frame==0, es el primero y por lo tanto
+  else fp = fopen(filename, "w");       // tiene que crear un nuevo archivo
+  // Header que usa lammps
+	fprintf(fp, "ITEM: TIMESTEP\n%d\nITEM: NUMBER OF ATOMS\n%d\nITEM: BOX BOUNDS pp pp pp\n", frame, N);
+	for(int l = 0; l < 3; l++){
+		fprintf(fp, "0 %f\n", L); // Limites de la caja en x-y-z
+	}
+	fprintf(fp, "ITEM: ATOMS id x y z vx vy vz \n"); // "Nombre de las columnas"
+	for(int i = 0; i < N; i++){
+		fprintf(fp, "%d %f %f %f %f %f %f\n", i, x[3*i], x[3*i+1], x[3*i+2], v[3*i], v[3*i+1], v[3*i+2]);
+	}
+  fclose(fp);
+  return 0;
+}

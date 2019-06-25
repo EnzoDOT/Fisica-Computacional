@@ -29,12 +29,10 @@ int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int fr
 
 int main (int argc, char *argv[])
 { 
-  FILE *fp2;
   int i,N,sfreq,tsteps;
   double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,dLt;
   int *semilla,gf;
 
-  fp2=fopen("md.dat","w");
    L=8.0;
    T= 2.0; //En 1.0 estoy cerca de la transicion de fase.
    tmax=10.0;
@@ -53,8 +51,12 @@ int main (int argc, char *argv[])
   char filename[255]; 
   sprintf(filename,"Energia_L=%lf_N=%4.2d.dat",L,N);
   FILE *fp=fopen(filename,"w");
+
+  char filename2[255]; 
+  sprintf(filename2,"Visual_L=%lf_N=%4.2d.lammpstrj",L,N);
+  FILE *fp2=fopen(filename2,"w");
   dt=tmax/tsteps; //10^-3 como mìnimo
-  sfreq=tsteps/10;
+  sfreq=tsteps/100;
   n=cbrt(N);
   dLt=2.5/(gf); /*Grilla para interpolar potencial,
                               fuerzas y distancias, Ntablas=5000.0*/
@@ -80,7 +82,8 @@ int main (int argc, char *argv[])
   {
    fprintf(fp,"%lf %lf \n",i*dt,hamiltoniano(posicion,v,fuerzas,dt,Vlj,Flj,r,r2,dLt,rc2,N,L)); 
  //  if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
-   if(i%sfreq==0) save_lammpstrj(filename, posicion, v, N, L, i);
+   if(i%sfreq==0) save_lammpstrj(filename2, posicion, v, N, L, i);
+//   save_lammpstrj(filename, posicion, v, N, L, i);
 //   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
   }
