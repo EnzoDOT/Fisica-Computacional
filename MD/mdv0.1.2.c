@@ -36,7 +36,7 @@ int main (int argc, char *argv[])
    L=8.0;
    T= 2.0; //En 1.0 estoy cerca de la transicion de fase.
    tmax=10.0;
-   N=27;
+   N=2;
    gf=5000;
    tsteps=10000;
 
@@ -150,7 +150,7 @@ void set_box(double *posicion, double n, double L, int N)
   i=0;
   for(i=0;i<N;i++)
      {*(posicion+3*i)=1.0;
-      *(posicion+3*i+1)=1.0 + (double)(L*i/4.0);
+      *(posicion+3*i+1)=1.0 + (double)(3.0*i);
       *(posicion+3*i+2)=1.0;
      }
 }
