@@ -21,15 +21,20 @@ double *r, double *r2, double dLt, double rc2, int N, double L);
 double deltax(double *posicion1, double *posicion2, double L);
 void verlet(double *posicion, double *v, double *fuerzas, double dt, \
 double *Vlj,double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2);
-double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
-double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L);
+void hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, \
+int N, double L, double *Etot, double *Ecin, double *Epot);
 void qlfta(double *fuerzas, int N);
 int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int frame);
+float calc_T(double *v, int N);
+float calc_P(double *v, int N);
+void escaleo_v(double *v, int N, double *Tr, double Td);
 
 int main (int argc, char *argv[])
 { 
   int i,N,sfreq,tsteps;
-  double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,dLt;
+  double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,Td,dLt;
+  double *Etot,*Ecin,*Epot,*Tr;
   int *semilla,gf;
 
    L=8.0;
@@ -39,17 +44,27 @@ int main (int argc, char *argv[])
    gf=5000;
    tsteps=10000;
 
-   if(argc==7)
+   if(argc==8)
     {sscanf(argv[1],"%lf",&L);
-     sscanf(argv[2],"%lf",&T);
-     sscanf(argv[3],"%d",&N);
+     sscanf(argv[2],"%lf",&T); //T inicial
+     sscanf(argv[3],"%d",&N); 
      sscanf(argv[4],"%lf",&tmax);
      sscanf(argv[5],"%d",&tsteps);
      sscanf(argv[6],"%d",&gf);
+     sscanf(argv[7],"%lf",&Td); //T deseada
      }
   char filename[255]; 
-  sprintf(filename,"Energia_L=%lf_N=%4.2d.dat",L,N);
+  sprintf(filename,"Etot_L=%lf_N=%4.2d.dat",L,N);
   FILE *fp=fopen(filename,"w");
+
+  sprintf(filename,"Ecin_L=%lf_N=%4.2d.dat",L,N);
+  FILE *fp3=fopen(filename,"w");
+
+  sprintf(filename,"Epot_L=%lf_N=%4.2d.dat",L,N);
+  FILE *fp4=fopen(filename,"w");
+
+  sprintf(filename,"Treal_L=%lf_N=%4.2d.dat",L,N);
+  FILE *fp5=fopen(filename,"w");
   
   char filename2[255]; 
   sprintf(filename2,"Visual_L=%lf_N=%4.2d.lammpstrj",L,N);
@@ -65,6 +80,10 @@ int main (int argc, char *argv[])
   r=(double*) malloc(gf*sizeof(double));
   r2=(double*) malloc(gf*sizeof(double));
   semilla=(int*) malloc(sizeof(int));
+  Etot=(double*) malloc(sizeof(double));
+  Ecin=(double*) malloc(sizeof(double));
+  Epot=(double*) malloc(sizeof(double));
+  Tr=(double*) malloc(sizeof(double));
   *semilla=S;
   posicion=(double*) malloc(3*N*sizeof(double));
   fuerzas=(double*) malloc(3*N*sizeof(double)); 
@@ -79,12 +98,20 @@ int main (int argc, char *argv[])
 
   for(i=0;i<tsteps;i++)
   {
-   fprintf(fp,"%lf %lf \n",i*dt,hamiltoniano(posicion,v,fuerzas,dt,Vlj,Flj,r,r2,dLt,rc2,N,L)); 
+   hamiltoniano(posicion,v,fuerzas,dt,Vlj,Flj,r,r2,dLt,rc2,N,L,\
+       Etot,Ecin,Epot);
+   fprintf(fp,"%lf %lf \n",i*dt,*Etot); 
+   fprintf(fp3,"%lf %lf \n",i*dt,*Ecin); 
+   fprintf(fp4,"%lf %lf \n",i*dt,*Epot); 
+   *Tr=calc_T(v,N);
+   fprintf(fp5,"%lf %lf \n",i*dt,*Tr); 
 //   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
    if(i%sfreq==0) save_lammpstrj(filename2, posicion, v, N, L, i);
 
 //   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
+ //  escaleo_v(v,N,Tr,Td);
+
   }
   
   free(posicion);
@@ -183,6 +210,58 @@ void set_v(double *v, int N, double T,int *semilla)
   }
 }
 
+float calc_T(double *v, int N)
+{ double vx2,vy2,vz2,Tr;
+  int i;
+   vx2=0.0;
+   vy2=0.0;
+   vz2=0.0;
+   for (i=0; i<N;i++)
+   {   
+    vx2+=*(v+3*i)*(*(v+3*i));
+    vy2+=*(v+3*i+1)*(*(v+3*i+1));
+    vz2+=*(v+3*i+2)*(*(v+3*i+2));
+   }
+   vx2=vx2/N;
+   vy2=vy2/N;
+   vz2=vz2/N;
+   Tr=(vx2+vy2+vz2)/3.0;
+   return (double)Tr;
+}
+
+void escaleo_v(double *v, int N, double *Tr, double Td)
+{ double esc;
+  int i;
+  esc=sqrt(Td/(*Tr));
+   for (i=0; i<N;i++)
+   {   
+    *(v+3*i)=esc*(*(v+3*i));
+    *(v+3*i+1)=esc*(*(v+3*i+1));
+    *(v+3*i+2)=esc*(*(v+3*i+2));
+   }
+}
+  
+
+float calc_P(double *v, int N)
+{ double vx2,vy2,vz2,Tr;
+  int i;
+
+   vx2=0.0;
+   vy2=0.0;
+   vz2=0.0;
+   for (i=0; i<N;i++)
+   {   
+    vx2+=*(v+3*i)*(*(v+3*i));
+    vy2+=*(v+3*i+1)*(*(v+3*i+1));
+    vz2+=*(v+3*i+2)*(*(v+3*i+2));
+   }
+
+   vx2=vx2/N;
+   vy2=vy2/N;
+   vz2=vz2/N;
+   return (double)Tr;
+}
+
 void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt)
 {  
 
@@ -279,10 +358,11 @@ double *Flj, double *r, double *r2, double dLt, int N, double L, double rc2)
    }
 }
 
-double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
- double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, double L)
+void hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
+ double *Vlj,double *Flj, double *r, double *r2, double dLt, double rc2, int N, \ 
+ double L, double *Etot, double *Ecin, double *Epot)
 { 
-   double p2,Vint,inter,Etot,Dx,Dy,Dz,n2,dr;
+   double p2,Vint,inter,Dx,Dy,Dz,n2,dr;
    int i,j,indice;
   // término de energía cinética
    p2=0.0;
@@ -315,9 +395,11 @@ double hamiltoniano(double *posicion, double *v, double *fuerzas, double dt, \
      }
    }
   }
-   Etot=p2+inter;
-   return Etot/N;
+   *Ecin=p2/N;
+   *Epot=inter/N;
+   *Etot=(p2+inter)/N;
 }
+
 
 int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int frame){
   FILE *fp;
