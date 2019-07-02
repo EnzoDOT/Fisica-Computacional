@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-/*Metropolis por Pedro y Enzo. Mayo 2019*/
+/*Metropolis por Pedro y Enzo. Julio 2019
+Esta version incluye el cálculo de lambda para determinar
+el tiempo de termalizacion*/
 
 #define M 2147483647
 #define A 16807
@@ -27,7 +29,7 @@ int N, double L, double *Etot, double *Ecin, double *Epot);
 void qlfta(double *fuerzas, int N);
 int save_lammpstrj(char *filename, double* x, double* v, int N, double L, int frame);
 float calc_T(double *v, int N);
-float calc_P(double *v, int N);
+
 void escaleo_v(double *v, int N, double *Tr, double Td);
 double lambda(double *posicion, double a, int N, double Pi);
 
@@ -58,7 +60,7 @@ int main (int argc, char *argv[])
 
   rho=N/(L*L*L);
   dt=tmax/tsteps; //10^-3 como mìnimo
-  sfreq=tsteps/100;
+  sfreq=tsteps/1000;
   n=cbrt(N);
   a=L/n;
   V=1.0/(L*L*L);
@@ -98,9 +100,9 @@ int main (int argc, char *argv[])
   sprintf(filename,"Lambda_L=%lf_N=%4.2d_T=%lf.dat",L,N,T);
   FILE *fp6=fopen(filename,"w");
   
-/*  char filename2[255]; 
+  char filename2[255]; 
   sprintf(filename2,"Visual_L=%lf_N=%4.2d.lammpstrj",L,N);
-  FILE *fp2=fopen(filename2,"w");*/
+  FILE *fp2=fopen(filename2,"w");
 
   set_box(posicion,n,L);
   set_v(v, N, T, semilla);
@@ -120,7 +122,7 @@ int main (int argc, char *argv[])
    fprintf(fp5,"%lf %lf \n",i*dt,*Tr); 
    fprintf(fp6,"%lf %lf \n",i*dt,lambda(posicion,a,N,Pi));
 //   if(i%sfreq==0) imprimir(posicion,N,L,i*dt);
-//   if(i%sfreq==0) save_lammpstrj(filename2, posicion, v, N, L, i);
+   if(i%sfreq==0) save_lammpstrj(filename2, posicion, v, N, L, i);
 
 //   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
@@ -271,18 +273,6 @@ void escaleo_v(double *v, int N, double *Tr, double Td)
    }
 }
   
-
-float calc_P(double *fuerzas, double *r2, int N)
-{ double Pex;
-  int i;
-
-   for (i=1; i<3*N;i++)
-   {
-      Pex+=*(fuerzas+i)*(*(r2+i));
-   }
-
-   return (double)Pex;
-}
 
 void set_tablas(double *Vlj,double *Flj, double *r, double *r2 , int gf, double dLt)
 {  
