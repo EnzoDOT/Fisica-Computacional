@@ -37,7 +37,7 @@ int main (int argc, char *argv[])
 { 
   int i,N,sfreq,tsteps;
   double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,Td,dLt;
-  double *Etot,*Ecin,*Epot,*Tr,Pi,a,rho,Pid,V,Pex;
+  double *Etot,*Ecin,*Epot,*Tr,Pi,a,rho,Pid,Vinv,Pex;
   int *semilla,gf;
 
    Pi=3.1415926535897932384626433832795;
@@ -60,10 +60,10 @@ int main (int argc, char *argv[])
 
   rho=N/(L*L*L);
   dt=tmax/tsteps; //10^-3 como mìnimo
-  sfreq=tsteps/100;
+  sfreq=tsteps/2000;
   n=cbrt(N);
   a=L/n;
-  V=1.0/(L*L*L);
+  Vinv=1.0/(L*L*L);
   dLt=2.5/(gf); /*Grilla para interpolar potencial,
                               fuerzas y distancias, Ntablas=5000.0*/
   rc2=(double) 2.5*2.5;
@@ -131,7 +131,7 @@ Hay que dejar termalizar cada vez que se reescalea. Puedo usar el sfreq*/
 
 //   imprimir(posicion,N,L,i*dt);
    verlet(posicion, v, fuerzas, dt, Vlj, Flj,  r, r2, dLt, N, L, rc2);
- //  escaleo_v(v,N,Tr,Td);
+   if(i%sfreq==0)  escaleo_v(v,N,Tr,Td);
 
    }
   }
