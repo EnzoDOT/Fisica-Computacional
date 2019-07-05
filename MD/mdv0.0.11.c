@@ -41,7 +41,7 @@ int main (int argc, char *argv[])
 { 
   int i,N,sfreq,sfreq2,tsteps,icount2,icount3,icount4;
   double *posicion,*v,*Vlj,*Flj,*r,*r2,*fuerzas,n,rc2, dt,L,tmax,T,Td,dLt;
-  double *Etot,*Ecin,*Epot,*Tr,Pi,a,rho,Vinv,Pex,Pr,Ek,Cv,Tprom;
+  double *Etot,*Ecin,*Epot,*Tr,Pi,a,rho,Vinv,Pex,Pr,Ek,Cv,Tprom,N3;
   int *semilla,gf;
 
    Pi=3.1415926535897932384626433832795;
@@ -169,7 +169,8 @@ llega a termalizar.*/
      Tprom=Tprom/icount3;
      Ek=Ek/icount4;
      Pr=(Pr+Pex*Vinv)/(icount3);
-     Cv=(double)N/((double)N-(double)N*Tprom*(-1.0+3.0*N/2.0)*Ek);
+     N3=3.0*N/2.0;
+     Cv=1.0/(1-Tprom*(N3-1.0)*Ek);
      fprintf(fp7,"Cv=%lf Tprom=%lf icoun3=%d Pr=%lf icoun4=%d Ek=%lf \n",Cv,Tprom,icount3,Pr,icount4,Ek);   
 //   }
   
